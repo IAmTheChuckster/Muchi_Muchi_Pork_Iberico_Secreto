@@ -1,4 +1,4 @@
-# # Muchi Muchi Pork! Roppaku
+# # Muchi Muchi Pork! Smoked Bacon
 ## To Do
 1. update warning page
 2. Remove lard attack lag for v1.01+
