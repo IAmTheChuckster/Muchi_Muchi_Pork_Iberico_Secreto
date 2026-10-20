@@ -1,8 +1,9 @@
 # # Muchi Muchi Pork! Roppaku
 ## To Do
-1. Remove lard attack lag for v1.01+
-2. Double bombu and powerup items x 2
-3. Arrange mode using v1.01+
+1. update warning page
+2. Remove lard attack lag for v1.01+
+3. Double bombu and powerup items x 2
+4. New Arrange mode using v1.01+ as a base and based off of the 360 mode
    a. lard attack splits items doubles them and they get sucked in when they reach 10000<br>
    b. fever meter from 0-10000<br>
    c. grazing fills fever meter<br>
