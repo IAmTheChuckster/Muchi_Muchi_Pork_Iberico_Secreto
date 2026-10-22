@@ -1,0 +1,9 @@
+# Never commit ROM data
+*.zip
+u2
+u4
+u23
+u24
+*_u2
+*_u4
+*.bin
