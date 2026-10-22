@@ -22,10 +22,11 @@ I did all the testing and planning.
 
 - **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, under the hi-score. It stops while the game is paused.
 - **Main-body health.** Shown under the timer and counts down to 0 when the part is destroyed.
-- **Title menu.** After a coin is inserted, or straight away on free play, the title shows **ARCADE / HARAHARA / MANPUKU / V1.01+**.
+- **Title menu.** After a coin is inserted, or straight away on free play, the title shows **ARCADE / HARAHARA / MANPUKU / V1.01+ / ARRANGE**.
   - Move the arrow with the joystick and press Start.
   - The arrow starts on ARCADE every time.
   - Harahara and Manpuku are unlocked, so the codes aren't needed.
+  - ARRANGE is a placeholder for now. Pressing Start on it does nothing.
 - **V1.01+ mode.** Arcade with these changes: 
   - Pigs fill the lard meter twice as fast, and the lard shot lasts twice as long.
   - Three loops, each one following the last whether or not you died or bombed. Loop 3 plays with Manpuku rules.
