@@ -35,6 +35,7 @@ I did all the testing and planning.
   - Holding B starts the lard shot right away, and letting go ends it. Whatever is left in the lard meter is kept.
   - Power-up and bomb pickups count twice.
 - **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/10/23 SMOKED BACON`.
+- **Title screen.** `SALE BY AMI` is replaced with `NOT FOR SALE`.
 ## Patching the game
 
 ## Testing
