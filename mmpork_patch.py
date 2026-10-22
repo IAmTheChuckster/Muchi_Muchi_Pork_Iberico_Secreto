@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
-Muchi Muchi Pork (Cave CV1000) - patch build 15
-Timer + boss health display, ARCADE / HARAHARA / MANPUKU / V1.01+ title menu,
-V1.01+ mode (lard changes, three loops, extends in every loop), new warning screen.
+Muchi Muchi Pork! Smoked Bacon (Cave CV1000) - patch build 18
 
 Usage:
-    python3 mmpork_patch.py mmpork.zip          -> writes u4 next to the zip
-    python3 mmpork_patch.py u4                  -> writes u4_patched next to it
-    python3 mmpork_patch.py mmpork.zip -o OUT   -> writes the patched u4 to OUT
-    python3 mmpork_patch.py mmpork.zip --zip    -> also writes mmpork_patched.zip
-                                                   (same set, u4 replaced)
+    python3 mmpork_patch.py mmpork.zip              -> writes bacon_u4 next to the zip
+    python3 mmpork_patch.py mmpork.zip --zip        -> also writes mmporkbcn.zip (the set with u4 replaced by bacon_u4)
+    python3 mmpork_patch.py mmpork.zip --mra        -> also writes "Muchi Muchi Pork! Smoked Bacon.mra" (MiSTer)
+    python3 mmpork_patch.py mmpork.zip -o OUT       -> writes the patched bacon_u4 to OUT
+    python3 mmpork_patch.py u4                      -> a loose original u4 works too (no --zip)
 
 The original u4 must have CRC32 d06cfa42; the result is checked to be 86b3450d.
 Only the Python standard library is used.
@@ -19,6 +17,9 @@ import argparse, base64, os, sys, zipfile, zlib
 ORIG_CRC = 0xD06CFA42
 PATCHED_CRC = 0x86B3450D
 U4_SIZE = 0x200000
+OUT_NAME = "bacon_u4"
+SET_NAME = "mmporkbcn.zip"
+MRA_NAME = "Muchi Muchi Pork! Smoked Bacon.mra"
 
 # Patch blocks: (offset in the u4 file as stored in the MAME set, bytes)
 PATCHES = [
@@ -88,9 +89,70 @@ PATCHES = [
 ]
 
 
+# MiSTer MRA (the bacon_u4 CRC is filled in from PATCHED_CRC when written)
+MRA_TEMPLATE = """<!--
+  ikacore_CV1k MRA - Muchi Muchi Pork! (Japan, 2007/ 4/17 MASTER VER.).
+  Converted from the community MRA (same set, zip names, CRCs and
+  <about>) to the DDR3-direct delivery format, 2026-09-17.
+
+  DELIVERY: the NAND and YMZ images do not stream over the ioctl/SPI
+  lane.  Both roms carry an `address=` attribute, so Main_MiSTer
+  assembles them and memcpys them straight into DDR3; the fabric sees
+  only a download pulse for those two.  Only u4 streams, so the ioctl
+  lane carries 4 MiB instead of the old 152 MiB.  Needs a Main_MiSTer
+  that parses `address` (2021 or later).  Rationale and evidence:
+  docs/mra_ddr3_direct_upload_plan.md.
+
+  Rom order is deliberate - DDR3 first, index 0 LAST.  Index 0's download
+  is what finally releases the CPU, so every image is in place before the
+  core runs, and any spurious run in an inter-rom gap is wiped by the u4
+  download's own reset hold.
+
+    <rom index="1">  DDR3 0x34400000  u2  NAND dump incl. spare (132 MiB,
+                                          exact size)
+    <rom index="2">  DDR3 0x3C800000  u23 YMZ chip 0, zero-padded to the
+                                          8 MiB slot
+                     DDR3 0x3D000000  u24 YMZ chip 1, zero-padded to the
+                                          8 MiB slot
+    <rom index="0">  ioctl stream     u4  program NOR x2 (2 MiB file listed
+                                          twice = the undecoded-A21 mirror
+                                          the boot ROM expects)
+-->
+<misterromdescription>
+    <about author="ika-musume" source="https://github.com/ika-musume/ikacore_CV1k"/>
+    <name>Muchi Muchi Pork! (Japan, 2007/ 4/17 MASTER VER.)</name>
+    <setname>mmporkbcn</setname>
+    <year>2007</year>
+    <manufacturer>Cave</manufacturer>
+    <category>Shooter</category>
+    <rbf>ikacore_CV1k</rbf>
+
+    <rom index="1" address="0x34400000" zip="mmporkbcn.zip" md5="none">
+        <part name="u2" crc="1ee961b8"/>
+    </rom>
+
+    <rom index="2" address="0x3C800000" zip="mmporkbcn.zip" md5="none">
+        <part name="u23" crc="4a4b36df"/>
+        <part repeat="0x400000">00</part>
+        <part name="u24" crc="ce83d07b"/>
+        <part repeat="0x400000">00</part>
+    </rom>
+
+    <nvram index="3" size="135680"/>
+
+    <rom index="0" zip="mmporkbcn.zip" md5="none">
+        <part name="bacon_u4" crc="86b3450d"/>
+        <part name="bacon_u4" crc="86b3450d"/>
+    </rom>
+
+    <buttons names="B1,B2,B3,B4,Start,Coin,Test,Service,Save State" default="A,B,X,Y,Start,R,L,Select"/>
+</misterromdescription>
+"""
+
+
 def find_u4(zf):
     for name in zf.namelist():
-        if os.path.basename(name).lower() == "u4":
+        if os.path.basename(name).lower() in ("u4", OUT_NAME):
             return name
     return None
 
@@ -113,11 +175,17 @@ def apply_patch(data):
     return out
 
 
+def mra_text():
+    import re
+    return re.sub(r'(<part name="bacon_u4" crc=")[0-9a-fA-F]{8}', lambda m: m.group(1) + "%08x" % PATCHED_CRC, MRA_TEMPLATE)
+
+
 def main():
-    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 (build 15)")
-    ap.add_argument("input", help="mmpork.zip or a loose u4 file")
-    ap.add_argument("-o", "--output", help="where to write the patched u4")
-    ap.add_argument("--zip", action="store_true", help="also write mmpork_patched.zip (input must be a zip)")
+    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into bacon_u4 (Smoked Bacon, build 18)")
+    ap.add_argument("input", help="mmpork.zip or a loose original u4 file")
+    ap.add_argument("-o", "--output", help="where to write bacon_u4")
+    ap.add_argument("--zip", action="store_true", help="also write mmporkbcn.zip (input must be a zip)")
+    ap.add_argument("--mra", action="store_true", help="also write the MiSTer .mra")
     a = ap.parse_args()
 
     is_zip = zipfile.is_zipfile(a.input)
@@ -137,7 +205,7 @@ def main():
         sys.exit("error: %s" % e)
 
     folder = os.path.dirname(os.path.abspath(a.input))
-    out = a.output or os.path.join(folder, "u4" if is_zip else os.path.basename(a.input) + "_patched")
+    out = a.output or os.path.join(folder, OUT_NAME)
     with open(out, "wb") as f:
         f.write(patched)
     print("original u4 CRC %08x OK" % ORIG_CRC)
@@ -145,13 +213,20 @@ def main():
 
     if a.zip:
         if not is_zip:
-            sys.exit("error: --zip needs a zip as input")
-        zout = os.path.join(folder, "mmpork_patched.zip")
+            sys.exit("error: --zip needs mmpork.zip as input")
+        zout = os.path.join(folder, SET_NAME)
         with zipfile.ZipFile(a.input) as zi, zipfile.ZipFile(zout, "w", zipfile.ZIP_DEFLATED) as zo:
             for info in zi.infolist():
-                body = patched if info.filename == name else zi.read(info.filename)
-                zo.writestr(info.filename, body)
-        print("wrote %s" % zout)
+                if info.filename == name:
+                    zo.writestr(OUT_NAME, patched)
+                else:
+                    zo.writestr(info.filename, zi.read(info.filename))
+        print("wrote %s (u4 replaced by %s)" % (zout, OUT_NAME))
+    if a.mra:
+        mout = os.path.join(folder, MRA_NAME)
+        with open(mout, "w", newline="\n") as f:
+            f.write(mra_text())
+        print("wrote %s" % mout)
     print("Back up your original u4 before flashing real hardware.")
 
 
