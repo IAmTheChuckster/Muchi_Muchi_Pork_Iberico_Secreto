@@ -104,9 +104,6 @@ def patch_sites(ram):
         (0x0C0679D4, 0xD836E605, '0xD836E604'),  #   date starts at text row 4 (was 5), so the 23-character line is centred
         (0x0C067A20, 0xD428E610, '0xD428E60F'),
         (0x0C06D038, 0x0C0E0FA8, 'nfsstr'),      # title screen: SALE BY AMI -> NOT FOR SALE (same row 9, centred)
-        (0x0C078708, 0x37008D02, '0x3700D21A'),  # lard: options-in-formation check -> mov.l @(0C078774),r2
-        (0x0C07870C, 0x6083AF45, '0x422B6083'),  #   jmp @r2 / mov r8,r0
-        (0x0C078774, 0x00090009, 'hookA'),       #   literal in unreachable padding
         (0x0C0785A8, 0x014C6013, '0x014CD373'),  # lard: button check when not firing -> mov.l @(0C078778),r3
         (0x0C0785AC, 0xC9202008, '0x432B6013'),  #   jmp @r3 / mov r1,r0
         (0x0C078778, 0x00090009, 'hookB'),       #   literal in unreachable padding
@@ -337,44 +334,6 @@ LA_FLAG: .long 0x0C04F828
 LA_RET: .long 0x0C090834
 LA_FULL: .long 0x0C090850
 
-; ---------- V1.01+: lard shot starts as soon as B is held (jumped to from 0C07870C via r2; T = options already in formation, r0 = player struct) ----------
-hookA:
-  bt ha_go
-  mov.l HA_FLAG,r2
-  mov.l @r2,r2
-  tst r2,r2
-  bt ha_no
-; V1.01+: put the options straight into lard formation (21A = all option bits)
-  mov.w HA_21B,r2
-  mov.b @(r0,r2),r1
-  mov #0,r3
-  tst r1,r1
-  bt ha_set
-ha_bits:
-  add r3,r3
-  add #1,r3
-  dt r1
-  bf ha_bits
-ha_set:
-  mov.w HA_21A,r2
-  add r0,r2
-  mov.b r3,@r2
-ha_go:
-  mov.l HA_YES,r2
-  jmp @r2
-  nop
-ha_no:
-  mov.l HA_NO,r2
-  jmp @r2
-  nop
-  .align 4
-HA_FLAG: .long 0x0C04F828
-HA_YES: .long 0x0C078712
-HA_NO: .long 0x0C07859C
-HA_21B: .word 0x021B
-HA_21A: .word 0x021A
-  .align 4
-
 ; ---------- V1.01+: releasing B leaves lard form and keeps the meter (jumped to from 0C0785AC via r3; r0 = r1 = held buttons, r4 = player struct) ----------
 ; returns to 0C0785BE with r3 = 1 to take the game's own "leave lard form" path (normally pressing A)
 hookB:
@@ -387,7 +346,13 @@ hookB:
   mov.l @r4,r2
   mov.w HB_MECH,r3
   tst r3,r2
+  bf hb_exit
+; not in lard form yet (options still moving, or an empty-meter lard shot): stop as well if the lard shot is on
+  mov.w HB_FIRE,r0
+  mov.b @(r0,r4),r2
+  tst r2,r2
   bt hb_orig
+hb_exit:
   mov.w HB_LARD,r0
   mov.w @(r0,r4),r2
   mov.w HB_KEEP,r0
@@ -413,6 +378,7 @@ HB_RET: .long 0x0C0785BE
 HB_MECH: .word 0x2000
 HB_LARD: .word 0x020E
 HB_KEEP: .word 0x0212
+HB_FIRE: .word 0x020A
 
 ; ---------- V1.01+: power-up and bomb pickups count twice (item collect handlers in the type table point here) ----------
 dbl_sp:

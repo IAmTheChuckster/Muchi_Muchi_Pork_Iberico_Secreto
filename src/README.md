@@ -13,10 +13,10 @@ Everything needed to rebuild the patch from your own `mmpork.zip`. No ROM or RAM
 
 ```
 python3 build.py mmpork.zip mmpork_patched.zip
-python3 update_patchers.py mmpork.zip mmpork_patched.zip 18
+python3 update_patchers.py mmpork.zip mmpork_patched.zip 19
 ```
 
-`mmpork.zip` must hold the original `u4` (CRC `d06cfa42`). Build 18 gives `u4` CRC `86b3450d`; the patchers save it as `bacon_u4`.
+`mmpork.zip` must hold the original `u4` (CRC `d06cfa42`). Build 19 gives `u4` CRC `9873e17a`; the patchers save it as `bacon_u4`.
 
 ## Run a MAME test
 
