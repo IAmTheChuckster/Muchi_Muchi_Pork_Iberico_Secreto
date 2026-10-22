@@ -18,7 +18,7 @@ Why did I make this? Because it's fun and for my own personal research to see th
 While Claude was used I put effort in making sure there are balanced gameplay.<br>
 I did all the testing and planning.
 
-## Patch notes
+## Patch Notes
 
 - **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, under the hi-score. It stops while the game is paused.
 - **Main-body health.** Shown under the timer and counts down to 0 when the part is destroyed.
