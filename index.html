@@ -6,7 +6,7 @@
 <style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>Muchi Muchi Pork Patcher</title>
+<title>Smoked Bacon Patcher</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Saira+Condensed:wght@600;700&display=swap">
@@ -67,8 +67,6 @@ button.secondary { background: transparent; color: var(--accent); font-family: v
 button:disabled { opacity: .45; cursor: not-allowed; }
 button:focus-visible, .drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .hint { color: var(--muted); font-size: 13px; margin: 0; }
-.adds { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
-.adds b { font-weight: 600; }
 footer { color: var(--muted); font-size: 13px; text-align: center; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -76,7 +74,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
 <div class="wrap">
   <header>
     <div class="eyebrow">Muchi Muchi Pork · Cave CV1000 · build 18</div>
-    <h1>Muchi Muchi Pork Patcher</h1>
+    <h1>Muchi Muchi Pork! Smoked Bacon Patcher</h1>
     <div class="privacy"><span class="dot"></span>Everything runs in your browser. Your ROMs are never uploaded.</div>
   </header>
 
@@ -104,21 +102,16 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
     <div class="progress" aria-hidden="true"><div id="bar"></div></div>
     <div class="tablebox"><table>
       <thead><tr><th>File</th><th>Expected CRC32</th><th>Built CRC32</th><th>Status</th></tr></thead>
-      <tbody><tr><td class="mono">u4<span class="role">Patched program ROM</span></td><td class="mono">86b3450d</td><td class="mono" id="outcrc">—</td><td><span class="pill" id="outstatus">Waiting</span></td></tr></tbody>
+      <tbody><tr><td class="mono">bacon_u4<span class="role">Patched program ROM (replaces u4)</span></td><td class="mono">86b3450d</td><td class="mono" id="outcrc">—</td><td><span class="pill" id="outstatus">Waiting</span></td></tr></tbody>
     </table></div>
     <div class="buttons">
-      <button id="btnSet" disabled>Download patched mmpork.zip</button>
-      <button id="btnU4zip" class="secondary" disabled>u4.zip</button>
-      <button id="btnU4" class="secondary" disabled hidden>u4</button>
+      <button id="btnSet" disabled>Download mmporkbcn.zip</button>
+      <button id="btnMra" class="secondary" disabled>Muchi Muchi Pork! Smoked Bacon.mra</button>
+      <button id="btnU4zip" class="secondary" disabled>bacon_u4.zip</button>
+      <button id="btnU4" class="secondary" disabled hidden>bacon_u4</button>
     </div>
-    <p class="hint" id="dlhint">mmpork.zip is the full set for MAME with u4 replaced; u2, u23 and u24 are copied unchanged. For the real board, flash the u4 inside it. Back up your original u4 first.</p>
+    <p class="hint" id="dlhint">mmporkbcn.zip is the full set with u4 replaced by bacon_u4; u2, u23 and u24 are copied unchanged. For MiSTer, put mmporkbcn.zip in your games folder and the .mra in _Arcade. Its bacon_u4 CRC matches this build. For the real board, flash bacon_u4 as u4, and back up your original u4 first.</p>
     <p class="msg" id="dlmsg"></p>
-    <ul class="adds">
-      <li><b>Boss and midboss timer</b> and <b>main-body health</b> under the hi-score, in every mode.</li>
-      <li><b>Title menu</b> after a coin is in (or on free play): ARCADE, HARAHARA, MANPUKU, V1.01+ and ARRANGE. Harahara and Manpuku are unlocked. ARRANGE is a placeholder for now: Start does nothing while it is selected.</li>
-      <li><b>V1.01+:</b> pigs fill the lard meter twice as fast and the lard shot lasts twice as long; three loops (loop 3 plays as Manpuku), always continuing regardless of deaths or bombs; extends follow your settings in every loop. Holding B starts the lard shot right away and letting go ends it, keeping what is left in the meter. Power-up and bomb pickups count twice.</li>
-      <li><b>Warning screen:</b> an unofficial-project disclaimer, HAVE FUN!!! and 2026/10/23 SMOKED BACON. The title screen says NOT FOR SALE instead of SALE BY AMI.</li>
-    </ul>
   </section>
 
   <footer>No ROM data is included in this page. It only adds the patch code to the dump you supply.</footer>
@@ -131,6 +124,9 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
     [0x1C4, "H4AAAA=="],
     [0x1F0000, "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AAAAAP//////////CwzwEpgAtAAAAAAA/wAQDv8A////////AAAAAP//////////AAAAAP//////////AAAAAP//////////AAAAAP//////////Cwzwn5gAtAAAAAAAAQAwKv8A////////AAAAAP//////////AAAAAP//////////AAAAAP//////////AAAAAP//////////Cwww01QAtAAAAAAAAQCkHzMy////////AwAwKiMiJST/////BQAgHP8F////////AAAAAP//////////AAAAAP//////////DAywHJgAtAAAAAAAAQAwKv8A////////AQEgHP8B////////AAAAAP//////////AAAAAP//////////AAAAAP//////////DAywZ1QAtAAAAAAAAQCkH/8+////////AwAwKv8w////////BQAgHP8A////////AAAAAP//////////AAAAAP//////////DAyguZgAtAAAAAAAAQAQDv84////////AwAwKv8a////////BQAwKv8A////////AiowKv8q////////AAAAAP//////////CgzA+ZgAtAABAAAAAQAFDP8A////////AAAAAP//////////AAAAAP//////////AAAAAP//////////AAAAAP//////////CwxwL5gAtAABAACAAQASDP8A////////AAAAAP//////////AAAAAP//////////AAAAAP//////////AAAAAP//////////CwxQS5gAtAABAAAAAQBQCv8A////////AAAAAP//////////AAAAAP//////////AAAAAP//////////AAAAAP//////////CwxQgJgAtwABAAAAAQAeD/8A////////AAAAAP//////////AAAAAP//////////AAAAAP//////////AAAAAP//////////CwyQaJgAtAABAAAAAQAmFv8A////////AAAAAP//////////AAAAAP//////////AAAAAP//////////AAAAAP//////////AAAAAEhUU0lQIE9SRUpUQ0kgAFMAAAAAAAAAAAAAAABwIACATlVGT0lGSUNMQUEgRE5JICBTT04AVAAAAAAAAHAgAIBGQUlGSUxUQURFVyBUSSxIRSBETlJPRVMARAAAcCAAgFlCICxST0EgVFVPSElSRVogRFlCAAAAAAAAAABwIACAQUNFViAuTEEgTElSSEdTVFQgIE9IVABFAAAAAHAgAIBST0dJTklMQUcgTUEgRU5BIERUSQBTAAAAAAAAcCAAgFNBT1NJQ1RBREVJIFROTEVFTFRDQVUATAAAAABwIACAUlBQT1JFWVRSIE1FSUEgTklXSFQAAAAAAAAAAHAgAIBIVElFIFJFUlBTQ0VJVEVWUiBHSVRIAFMAAAAAcCAAgE9IRExSRS5TAAAAAAAAAAAAAAAAAAAAAAAAAABwIACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAgAIAgICAgICBBSEVWRiBOVSEhICEgICAgICAAAAAAIHAAEDAyNjIxLy8wMzIAAE1TS09ERUIgQ0FOTwAAAABPTiBUT0YgUkFTRUwAAAAABgxM/AYMcBAfgBAEBgyc0gYMcBAfgCQABgxE0AcM0HsfgDwBBgwEzxOLTtoTiwHQBgwIz6BgM8krQAkABgwMzwGIAo8fgEAACQwoCBB/AXEQfwfQCQwsCB1gaIgrQAkACQxICAkACQAfgMABBwzIajJiKCId1CtEBwzMahCP827zbgkABwxAa1EMTFwfgMwCCQzAZQzTMGIM0ytDCQzEZSgiC4sJAAuLCQz0ZVEMTFwfgHADBwyEAQcM0HsfgLQDBgyoeg4MpAkfgDAKBgy0eg0MWPYfgLALBgzEeg4MJAsfgLwLBgzUeTbYBeY22ATmBgwgeijUEOYo1A/mBgw40A4MqA8fgMwLBwwIhwA3Ao0ANxrSBwwMh4NgRa8rQoNgBwx0hwkACQAfgPABBwyohUwBE2BMAXPTBwyshSDJCCArQxNgBwx4hwkACQAfgDACDgwkKwgM4PgfgHICDgxEKwgMAPwfgHgCDgxkKwgMwPwfgH4CDgyEKwgMIP8fgIQCAAAAAA=="]
   ];
+  const OUT_NAME = "bacon_u4", SET_NAME = "mmporkbcn.zip", MRA_NAME = "Muchi Muchi Pork! Smoked Bacon.mra";
+  // MiSTer MRA; the bacon_u4 CRC is set from PATCHED_CRC when it is saved.
+  const MRA = "<!--\n  ikacore_CV1k MRA - Muchi Muchi Pork! (Japan, 2007/ 4/17 MASTER VER.).\n  Converted from the community MRA (same set, zip names, CRCs and\n  <about>) to the DDR3-direct delivery format, 2026-09-17.\n\n  DELIVERY: the NAND and YMZ images do not stream over the ioctl/SPI\n  lane.  Both roms carry an `address=` attribute, so Main_MiSTer\n  assembles them and memcpys them straight into DDR3; the fabric sees\n  only a download pulse for those two.  Only u4 streams, so the ioctl\n  lane carries 4 MiB instead of the old 152 MiB.  Needs a Main_MiSTer\n  that parses `address` (2021 or later).  Rationale and evidence:\n  docs/mra_ddr3_direct_upload_plan.md.\n\n  Rom order is deliberate - DDR3 first, index 0 LAST.  Index 0's download\n  is what finally releases the CPU, so every image is in place before the\n  core runs, and any spurious run in an inter-rom gap is wiped by the u4\n  download's own reset hold.\n\n    <rom index=\"1\">  DDR3 0x34400000  u2  NAND dump incl. spare (132 MiB,\n                                          exact size)\n    <rom index=\"2\">  DDR3 0x3C800000  u23 YMZ chip 0, zero-padded to the\n                                          8 MiB slot\n                     DDR3 0x3D000000  u24 YMZ chip 1, zero-padded to the\n                                          8 MiB slot\n    <rom index=\"0\">  ioctl stream     u4  program NOR x2 (2 MiB file listed\n                                          twice = the undecoded-A21 mirror\n                                          the boot ROM expects)\n-->\n<misterromdescription>\n    <about author=\"ika-musume\" source=\"https://github.com/ika-musume/ikacore_CV1k\"/>\n    <name>Muchi Muchi Pork! (Japan, 2007/ 4/17 MASTER VER.)</name>\n    <setname>mmporkbcn</setname>\n    <year>2007</year>\n    <manufacturer>Cave</manufacturer>\n    <category>Shooter</category>\n    <rbf>ikacore_CV1k</rbf>\n\n    <rom index=\"1\" address=\"0x34400000\" zip=\"mmporkbcn.zip\" md5=\"none\">\n        <part name=\"u2\" crc=\"1ee961b8\"/>\n    </rom>\n\n    <rom index=\"2\" address=\"0x3C800000\" zip=\"mmporkbcn.zip\" md5=\"none\">\n        <part name=\"u23\" crc=\"4a4b36df\"/>\n        <part repeat=\"0x400000\">00</part>\n        <part name=\"u24\" crc=\"ce83d07b\"/>\n        <part repeat=\"0x400000\">00</part>\n    </rom>\n\n    <nvram index=\"3\" size=\"135680\"/>\n\n    <rom index=\"0\" zip=\"mmporkbcn.zip\" md5=\"none\">\n        <part name=\"bacon_u4\" crc=\"86b3450d\"/>\n        <part name=\"bacon_u4\" crc=\"86b3450d\"/>\n    </rom>\n\n    <buttons names=\"B1,B2,B3,B4,Start,Coin,Test,Service,Save State\" default=\"A,B,X,Y,Start,R,L,Select\"/>\n</misterromdescription>\n";
   const SET = [
     { name: "u4",  size: 0x200000,  crc: 0xd06cfa42, role: "Patched" },
     { name: "u2",  size: 138412032, crc: 0x1ee961b8, role: "Copied unchanged" },
@@ -211,7 +207,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
   }
 
   const state = { entries: null, u4Entry: null, loose: {}, patched: null };
-  const base = n => n.split(/[\\/]/).pop().toLowerCase();
+  const base = n => { const b = n.split(/[\\/]/).pop().toLowerCase(); return b === OUT_NAME ? "u4" : b; };
   const bar = v => { $("bar").style.width = Math.round(v * 100) + "%"; };
 
   function pill(cls, text) { return `<span class="pill ${cls}">${text}</span>`; }
@@ -234,7 +230,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
   function resetOut() {
     state.patched = null; bar(0);
     $("outcrc").textContent = "—"; $("outstatus").className = "pill"; $("outstatus").textContent = "Waiting";
-    ["btnSet", "btnU4zip", "btnU4"].forEach(id => $(id).disabled = true);
+    ["btnSet", "btnMra", "btnU4zip", "btnU4"].forEach(id => $(id).disabled = true);
     $("checkmsg").textContent = ""; $("checkmsg").className = "msg"; $("dlmsg").textContent = "";
   }
   function fail(msg) { $("checkmsg").textContent = msg; $("checkmsg").className = "msg err"; bar(0); }
@@ -285,16 +281,16 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
     $("outstatus").className = "pill ok"; $("outstatus").textContent = "Matches build 18";
     $("checkmsg").textContent = "Original u4 found (CRC d06cfa42) and patched.";
     state.patched = out; bar(1);
-    $("btnU4zip").disabled = false; $("btnU4").disabled = false;
+    $("btnU4zip").disabled = false; $("btnU4").disabled = false; $("btnMra").disabled = false;
     $("btnSet").disabled = !state.entries;
-    if (!state.entries) $("dlmsg").textContent = "The full mmpork.zip needs the original zip as input; you loaded a loose u4, so only the u4 download is available.";
+    if (!state.entries) $("dlmsg").textContent = "mmporkbcn.zip needs the original mmpork.zip as input; you loaded a loose u4, so only bacon_u4 and the .mra are available.";
   }
 
   const dosNow = () => ({ time: 0, date: (2026 - 1980) << 9 | 10 << 5 | 14 });
   async function u4Item() {
     const def = await deflateRaw(state.patched);
     const t = dosNow();
-    const nameBytes = state.u4Entry ? state.u4Entry.nameBytes : new TextEncoder().encode("u4");
+    const nameBytes = new TextEncoder().encode(OUT_NAME);
     return def ? { nameBytes, method: 8, crc: PATCHED_CRC, csize: def.length, usize: U4_SIZE, time: t.time, date: t.date, data: def }
                : { nameBytes, method: 0, crc: PATCHED_CRC, csize: U4_SIZE, usize: U4_SIZE, time: t.time, date: t.date, data: state.patched };
   }
@@ -322,9 +318,10 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     }
   }
-  $("btnSet").onclick = async () => { $("btnSet").disabled = true; try { await save("mmpork.zip", await makeSet()); } finally { $("btnSet").disabled = false; } };
-  $("btnU4zip").onclick = async () => save("u4.zip", buildZip([await u4Item()]));
-  $("btnU4").onclick = () => save("u4", new Blob([state.patched], { type: "application/octet-stream" }));
+  $("btnSet").onclick = async () => { $("btnSet").disabled = true; try { await save(SET_NAME, await makeSet()); } finally { $("btnSet").disabled = false; } };
+  $("btnMra").onclick = () => save(MRA_NAME, new Blob([MRA.replace(/(<part name="bacon_u4" crc=")[0-9a-fA-F]{8}/g, (m, p) => p + hex(PATCHED_CRC))], { type: "application/xml" }));
+  $("btnU4zip").onclick = async () => save(OUT_NAME + ".zip", buildZip([await u4Item()]));
+  $("btnU4").onclick = () => save(OUT_NAME, new Blob([state.patched], { type: "application/octet-stream" }));
 
   const drop = $("drop"), input = $("file");
   input.onchange = () => input.files.length && load([...input.files]);
