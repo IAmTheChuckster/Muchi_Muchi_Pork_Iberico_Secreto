@@ -126,7 +126,7 @@ def patch_sites(ram):
             assert rd(a) == old, hex(a)
     return sites
 
-FEVER_SPEED = 100   # unused since build 30: Fever speed now follows the enemy bullet count (fevspeed)
+FEVER_SPEED = 100   # unused: Fever speed is a fixed 50% in fevspeed (SP_500)
 MENU_COL = 23   # top line of the menu (text-layer column; game draws the mode name at column 20, row 11)
 MENU_ROW = 9
 ARROW = 0x3E
@@ -770,46 +770,9 @@ fevspeed:
   mov.l @r0,r0
   tst r0,r0
   bt sp_norm
-; speed in tenths of a percent from the enemy bullets on screen (n):
-; n <= 100: 1000 - 3n (100% .. 70%), 100 < n < 150: 700 - 4(n - 100) (70% .. 50%), n >= 150: 500
+; Fever speed: a fixed 50% (in tenths of a percent)
   mov.l r3,@-r15
   mov.l r5,@-r15
-  mov.l SP_BPOOL,r1
-  mov.l SP_BCNT,r0
-  mov.l @r0,r5
-  mov #0,r3
-  tst r5,r5
-  bt sp_cdone
-sp_cnt:
-  mov.l @r1,r0
-  tst r0,r0
-  bt sp_c1
-  add #1,r3
-sp_c1:
-  dt r5
-  bf/s sp_cnt
-  add #92,r1
-sp_cdone:
-  mov #100,r0
-  cmp/hi r0,r3
-  bt sp_hi
-  mov r3,r2
-  add r2,r2
-  add r3,r2
-  mov.w SP_1000,r0
-  sub r2,r0
-  bra sp_acc
-  mov r0,r2
-sp_hi:
-  mov.w SP_150,r0
-  cmp/hs r0,r3
-  bt sp_min
-  add #-100,r3
-  shll2 r3
-  mov.w SP_700,r2
-  bra sp_acc
-  sub r3,r2
-sp_min:
   mov.w SP_500,r2
 sp_acc:
   mov.l @r15+,r5
@@ -1373,7 +1336,7 @@ mcl_cp:
   mov.l FX_IVEL,r0
   jsr @r0
   mov r11,r4
-; pop the two halves up toward the top of the screen (3-6 px/frame), one drifting left and one right (1-2 px/frame)
+; pop the two halves up toward the top of the screen (2-3 px/frame), one drifting left and one right (0.5-1 px/frame)
   mov.l @r15+,r4
   bsr scatter
   mov #0,r5
@@ -1554,10 +1517,10 @@ FX_MODE3: .long 0x0C516FDC
 FX_SAVE: .long 0x0C04F860
 FX_CHAIN: .long 0x0C53F4A4
 FX_RAND: .long 0x0C06B450
-FX_RMASK: .long 0x0002FFFF
-FX_VMIN: .long 0x00030000
-FX_HOFF: .long 0x00010000
-FX_HMASK: .long 0x0000FFFF
+FX_RMASK: .long 0x0000FFFF
+FX_VMIN: .long 0x00020000
+FX_HOFF: .long 0x00008000
+FX_HMASK: .long 0x00007FFF
 FX_LARD: .long 0x0000020E
 FX_O214L: .long 0x00000214
 FX_LAST: .long 0x0C04F83C
