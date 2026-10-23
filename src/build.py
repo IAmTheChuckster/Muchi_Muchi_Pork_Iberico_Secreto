@@ -232,6 +232,15 @@ m_notv:
   jsr @r0
   mov #37,r4
 m_go:
+; new game from the title menu: clear the ARRANGE+ FEVER state (0C04F834..0C04F87F); a continue never comes here
+  mov.l LM_FST,r1
+  mov #19,r2
+  mov #0,r0
+m_clr:
+  mov.l r0,@r1
+  dt r2
+  bf/s m_clr
+  add #4,r1
   mov.l LM_HELD,r10
   mov.l LM_SEL,r1
   mov.l @r1,r0
@@ -266,6 +275,7 @@ LM_DLIT2: .long 0x0C078818
 drain2: .long 0x0A0E0C00, 0x10160707, 0x50000000, 0x01020102
 LM_MLIT: .long 0x0C080B30
 LM_ARR: .long 0x0C04F830
+LM_FST: .long 0x0C04F834
 LM_MED0: .long 0x0C0E3110
 LM_MED2: .long nomedal
 nomedal: .long 0x00000000, 0x00000000
