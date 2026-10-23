@@ -795,7 +795,7 @@ ah_bw:
   add #-8,r4
   dt r5
   bf ah_bc
-; column 34 rows 0-13 (under the bar): FEVER READY!!! in yellow while the counter is full, flashing
+; column 34 rows 0-13 (under the bar): FEVER READY in yellow while the counter is full, flashing
 ; (16 frames on, 16 off, from the vblank count); blank otherwise
   mov.l AH_CNT,r0
   mov.l @r0,r3
@@ -812,7 +812,7 @@ ah_rdy:
   mov.l AH_RDY,r2
   mova AH_RTXT,r0
   mov r0,r5
-  mov.l AH_YCOL,r7
+  mov.l AH_RCOL,r7
   mov #14,r1
 ah_rl:
   mov.b @r5+,r0
@@ -846,7 +846,8 @@ AH_BAR: .long 0x0C484AB8
 AH_RDY: .long 0x0C484A40
 AH_DIRTY34: .long 0x0C4EADA8
 AH_VBL: .long 0x0C002310
-AH_RTXT: .long 0x46455645, 0x52205245, 0x41445921, 0x21210000
+AH_RTXT: .long 0x46455645, 0x52205245, 0x41445920, 0x20200000
+AH_RCOL: .long 0x80801000
 AH_BLUE: .long 0x20408000
 AH_RED: .long 0x80202000
 AH_10K: .word 10000
@@ -1484,10 +1485,10 @@ fx_cn:
 fx_m:
   mov.l @r8,r0
   tst r0,r0
-  bt fx_mn
+  bt fx_out_b
   mov.l @(4,r8),r0
   cmp/eq #5,r0
-  bf fx_mn
+  bf fx_out_b
 ; Fever, or FEVER counter full: every medal is 10000
   mov.l FX_FEV,r0
   mov.l @r0,r0
@@ -1512,12 +1513,12 @@ fx_nf:
   bt fx_mn
 fx_beam:
   tst r10,r10
-  bt fx_mn
+  bt fx_out_b
 ; in the beam: above the player and within 40 pixels sideways
   mov.l @(44,r8),r0
   mov.l @(28,r12),r1
   cmp/gt r1,r0
-  bf fx_mn
+  bf fx_out_b
   mov.l @(48,r8),r0
   mov.l @(32,r12),r1
   sub r1,r0
@@ -1525,7 +1526,24 @@ fx_beam:
   add r1,r0
   add r1,r1
   cmp/hs r1,r0
-  bt fx_mn
+  bt fx_out_b
+; split only when the medal enters the beam: nothing more while the beam stays on it
+  mov.l FX_INB,r1
+  add r11,r1
+  mov.b @r1,r0
+  tst r0,r0
+  bf fx_mn
+  mov #1,r0
+  mov.b r0,@r1
+  bra fx_inb
+  nop
+fx_out_b:
+  mov.l FX_INB,r1
+  add r11,r1
+  mov #0,r0
+  bra fx_mn
+  mov.b r0,@r1
+fx_inb:
 ; cooldown: 8 steps since this medal last split
   mov r11,r0
   add r0,r0
@@ -1615,6 +1633,10 @@ mcl_cp:
   mov.l FX_CD,r1
   add r0,r1
   mov.w r13,@r1
+  mov.l FX_INB,r1
+  add r5,r1
+  mov #1,r0
+  mov.b r0,@r1
   add #1,r9
   mov.l r6,@-r15
   mov.l FX_IVEL,r0
@@ -1774,6 +1796,7 @@ FX_MECH: .long 0x00002000
 FX_IPOOL: .long 0x0C52B648
 FX_HALFW: .long 0x00280000
 FX_CD: .long 0x0C04FA00
+FX_INB: .long 0x0C04FB90
 FX_IINIT: .long 0x0C080B40
 FX_ALLOC: .long 0x0C07F6A0
 FX_NEWIX: .long 0x0C4C24EC
