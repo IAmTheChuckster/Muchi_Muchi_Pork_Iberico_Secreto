@@ -734,7 +734,7 @@ LW_P1: .long 0x0C510B28
 LW_CNT: .long 0x0C04F834
 LW_MAX: .long 10000
 
-; ---------- ARRANGE HUD: the FEVER counter (0C04F834) under the hi-score in yellow; 2P works as normal ----------
+; ---------- ARRANGE HUD: the FEVER bar (0C04F834) under the 1P lives; 2P works as normal ----------
 ahud:
   mov.l AH_ARR,r0
   mov.l @r0,r0
@@ -749,58 +749,53 @@ ah_on:
   nop
   lds.l @r15+,pr
 ; full 2P: the 2P label, score, join prompts and inputs are left alone.
-; column 37 rows 11-18 (where the mode label goes, under the hi-score): 3 blanks and the counter,
-; 5 digits right-aligned, in the hi-score's yellow
-  mov.l AH_C36F,r2
-  mov.l AH_YCOL,r7
-  mov #32,r0
-  or r7,r0
-  mov.l r0,@r2
-  mov.l r0,@(4,r2)
-  mov.l r0,@(8,r2)
-  add #12,r2
+; column 35 rows 0-7 (under the 1P lives icon): the FEVER bar, 64 pixels (counter * 64 / 10000), built from
+; the font's 1-8 pixel blocks (codes 16-23); blue while below 10000 (filling or draining), red when full
   mov.l AH_CNT,r0
   mov.l @r0,r3
-  mova AH_POW,r0
-  mov r0,r5
-  mov #5,r1
-  mov #0,r6
-ah_d:
-  mov.l @r5+,r4
-  mov #48,r0
-ah_sub:
-  cmp/hs r4,r3
-  bf ah_dig
-  sub r4,r3
-  bra ah_sub
-  add #1,r0
-ah_dig:
-  mov r0,r4
-  mov #48,r0
-  cmp/eq r0,r4
-  bf ah_nz
-  tst r6,r6
-  bf ah_put
-  mov r1,r0
-  cmp/eq #1,r0
-  bt ah_zero
-  mov #32,r4
-  bra ah_put
+  mov.l AH_BLUE,r7
+  mov.w AH_10K,r0
+  cmp/hs r0,r3
+  bf ah_blu
+  mov.l AH_RED,r7
+ah_blu:
+  shll2 r3
+  add r3,r3
+  mov #0,r4
+  mov.w AH_1250,r1
+ah_q:
+  cmp/hs r1,r3
+  bf ah_qd
+  sub r1,r3
+  bra ah_q
+  add #1,r4
+ah_qd:
+  mov.l AH_BAR,r2
+  mov #8,r5
+  mov #8,r6
+ah_bc:
+  cmp/ge r6,r4
+  bf ah_bp
+  mov #23,r0
+  bra ah_bw
   nop
-ah_zero:
-  mov #48,r4
-  bra ah_put
+ah_bp:
+  cmp/pl r4
+  bt ah_bpt
+  mov #32,r0
+  bra ah_bw
   nop
-ah_nz:
-  mov #1,r6
-ah_put:
+ah_bpt:
   mov r4,r0
+  add #15,r0
+ah_bw:
   or r7,r0
   mov.l r0,@r2
-  dt r1
-  bf/s ah_d
   add #4,r2
-; redraw column 37
+  add #-8,r4
+  dt r5
+  bf ah_bc
+; redraw column 35
   mov.l AH_DIRTY,r2
   mov #1,r0
   rts
@@ -812,7 +807,13 @@ AH_CNT: .long 0x0C04F834
 AH_C39: .long 0x0C484CEC
 AH_C38: .long 0x0C484C70
 AH_C36F: .long 0x0C484BD4
-AH_DIRTY: .long 0x0C4EADC0
+AH_DIRTY: .long 0x0C4EADB0
+AH_BAR: .long 0x0C484AB8
+AH_BLUE: .long 0x20408000
+AH_RED: .long 0x80202000
+AH_10K: .word 10000
+AH_1250: .word 1250
+  .align 4
 AH_LCOL: .long 0x60308000
 AH_YCOL: .long 0x80602000
 AH_SCOL: .long 0x80808000

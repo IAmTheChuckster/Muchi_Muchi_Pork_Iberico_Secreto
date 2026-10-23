@@ -165,7 +165,7 @@ class Asm:
             v = int(args[0][1:], 0); assert -128 <= v <= 127
             return 0x7000 | (n(1) << 8) | (v & 0xff)
         if op in two: return two[op] | (n(1) << 8) | (n(0) << 4)
-        one = {'dt': 0x4010, 'shlr': 0x4001, 'shlr2': 0x4009, 'shlr16': 0x4029, 'shll2': 0x4008, 'shll8': 0x4018,
+        one = {'dt': 0x4010, 'cmp/pl': 0x4015, 'shlr': 0x4001, 'shlr2': 0x4009, 'shlr16': 0x4029, 'shll2': 0x4008, 'shll8': 0x4018,
                'cmp/pz': 0x4011}
         if op in one: return one[op] | (n(0) << 8)
         if op == 'movt': return 0x0029 | (n(0) << 8)
