@@ -1,4 +1,4 @@
-# # Muchi Muchi Pork! Smoked Bacon
+# # Muchi Muchi Pork! Ibérico Secreto
   
 A patch for **Muchi Muchi Pork!** (2007/ 4/17 MASTER VER.)<br>
 This repository holds only source, tools and notes. **No ROM data is included**; you patch your own legally owned dump.
