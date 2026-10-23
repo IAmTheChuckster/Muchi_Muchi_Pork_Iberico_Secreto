@@ -203,12 +203,17 @@ m_noblk:
 ; V1.01 flag and drain-rate table pointers follow the selection
   mov #0,r2
   mov.l LM_DRAIN0,r6
+  mov.l LM_MED0,r7
   mov r3,r0
   cmp/eq #3,r0
   bf m_notv
   mov #1,r2
   mov.l LM_DRAIN2,r6
+  mov.l LM_MED2,r7
 m_notv:
+; V1.01+: the every-40th-kill medal (8th step of the small-enemy drop list) becomes a power-up like the other steps
+  mov.l LM_MLIT,r0
+  mov.l r7,@r0
   mov.l LM_FLAG,r0
   mov.l r2,@r0
   mov #0,r2
@@ -255,6 +260,10 @@ LM_DRAIN2: .long drain2
 LM_DLIT1: .long 0x0C078648
 LM_DLIT2: .long 0x0C078818
 drain2: .long 0x0A0E0C00, 0x10160707, 0x50000000, 0x01020102
+LM_MLIT: .long 0x0C080B30
+LM_MED0: .long 0x0C0E3110
+LM_MED2: .long nomedal
+nomedal: .long 0x00000000, 0x00000000
 BLK_LIST: .long 0x0C481DF8, 0x0C481DF9, 0x0C481E38, 0x0C481E39, 0x0C481E78, 0x0C481E79, 0x0C481EFC, 0x0C481EFD, 0x0C481F3C, 0x0C481F3D, 0x0C481F7C, 0x0C481F7D
 
 ; ---------- menudraw: replaces the title's mode-name draw (0C077BD0); draws the 3-line menu with an arrow ----------

@@ -32,6 +32,7 @@ I did all the testing and planning.
   - Scores go to the Arcade high-score table. A game over during loop 3 goes to the Manpuku table.
   - The lard shot only fires while B is held. Letting go ends it straight away, with an empty or a full meter, and whatever is left in the lard meter is kept.
   - Power-up and bomb pickups count twice.
+  - Small enemies no longer drop the extra medal every 40th kill; that drop is a power-up like the other drops.
 - **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/10/23 SMOKED BACON`.
 - **Title screen.** `SALE BY AMI` is replaced with `NOT FOR SALE`.
 ## Patching the game
