@@ -750,7 +750,7 @@ ah_on:
   lds.l @r15+,pr
 ; full 2P: the 2P label, score, join prompts and inputs are left alone.
 ; column 35 rows 0-7 (under the 1P lives icon): the FEVER bar, 64 pixels (counter * 64 / 10000), built from
-; the font's 1-8 pixel blocks (codes 16-23); blue while below 10000 (filling or draining), red when full
+; the font's 1-8 pixel blocks (codes 16-23); blue while below 10000 (filling or draining), yellow when full
   mov.l AH_CNT,r0
   mov.l @r0,r3
   mov.l AH_BLUE,r7
@@ -849,7 +849,7 @@ AH_VBL: .long 0x0C002310
 AH_RTXT: .long 0x46455645, 0x52205245, 0x41445920, 0x20200000
 AH_RCOL: .long 0x80801000
 AH_BLUE: .long 0x20408000
-AH_RED: .long 0x80202000
+AH_RED: .long 0x80800000
 AH_10K: .word 10000
 AH_1250: .word 1250
   .align 4
