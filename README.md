@@ -17,9 +17,9 @@ I did all the testing and planning.
   - Move the arrow with the joystick and press Start.
   - The arrow starts on ARCADE every time.
   - Harahara and Manpuku are unlocked, so the codes aren't needed.
-- **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with a FEVER bar under the 1P lives icon: blue while it fills (and while it drains in Fever), red when the counter is full, with FEVER READY flashing in yellow below it.
+- **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with "ARRANGE+" shown under the hi-score and a FEVER bar under the 1P lives icon: blue while it fills (and while it drains in Fever), red when the counter is full, with FEVER READY flashing in yellow below it.
   - One loop: after the last boss the ending plays and the game is over.
-  - An extra life every 30,000,000 points (instead of the normal score extends).
+  - An extra life every 20,000,000 points (instead of the normal score extends).
   - Two players can play. Fever, juggling and the FEVER counter follow player 1.
   - **Medal juggling.** Hitting a medal with the lard shot splits it into two medals one value step higher (100 → 200 → … → 10000), which pop up toward the top of the screen and fall back down, one drifting to each side. Every value change pops, even when there is no room to split. A medal splits once as it enters the beam; it splits again only after leaving the beam and coming back (or when you fire a new lard beam). Up to 64 medals on screen.
   - **FEVER counter.** Every medal collected adds 0.3% of its value (100 adds 0.3, 10000 adds 30), up to 10000. It goes back to 0 when a new game starts (a continue keeps it). While the counter is full, every medal is a 10000 medal and enemies fire revenge bullets when destroyed (as in Manpuku).

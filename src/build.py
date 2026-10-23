@@ -74,7 +74,7 @@ def warn_src():
     for t, c in zip(lines, colors):
         b = t.encode('ascii').ljust(28, b'\0')
         out += '  .long ' + ', '.join('0x%08x' % int.from_bytes(b[i:i + 4], 'big') for i in range(0, 28, 4)) + ', 0x%08x\n' % c
-    for name, text in (('datestr', '2026/10/23'), ('verstr', 'SMOKED BACON'), ('nfsstr', 'NOT FOR SALE')):
+    for name, text in (('datestr', '2026/10/24'), ('verstr', 'IBERICO'), ('nfsstr', 'NOT FOR SALE')):
         b = text.encode('ascii') + b'\0'
         b = b.ljust((len(b) + 3) // 4 * 4, b'\0')
         out += name + ':\n  .long ' + ', '.join('0x%08x' % int.from_bytes(b[i:i + 4], 'big') for i in range(0, len(b), 4)) + '\n'
@@ -342,7 +342,7 @@ d_ch:
   .align 4
 LD_SEL: .long 0x0C04F824
 LD_CELL: .long CELL_TOP
-LD_COLOR: .long 0x60308000
+LD_COLOR: .long 0x80800000
 LD_DIRTY: .long DIRTY_BOTTOM
 MENU_TXT: .long 0x41524341, 0x44452020, 0x48415241, 0x48415241, 0x4D414E50, 0x554B5520, 0x56312E30, 0x312B2020, 0x41525241, 0x4E47452B
 
@@ -614,8 +614,7 @@ modelabel:
   mov.l @r0,r0
   tst r0,r0
   bt ml_v101
-  rts
-  nop
+  add #8,r3
 ml_v101:
   mov.l ML_COLOR,r7
   mov #8,r1
@@ -1287,7 +1286,7 @@ fx_play:
   mov.l r0,@r1
 fx_g0:
   mov.l FX_P1,r12
-; extends every 30,000,000: the game's next-extend score (+0x22C) is kept at the next multiple above the score
+; extends every 20,000,000: the game's next-extend score (+0x22C) is kept at the next multiple above the score
   mov.l FX_O228,r0
   mov.l @(r0,r12),r1
   mov.l FX_EXT,r2
@@ -1784,7 +1783,7 @@ FX_LAST: .long 0x0C04F83C
 FX_PST: .long 0x0C04F840
 FX_P1: .long 0x0C510B28
 FX_O228: .long 0x00000228
-FX_EXT: .long 30000000
+FX_EXT: .long 20000000
 FX_FEV: .long 0x0C04F838
 FX_CNT: .long 0x0C04F834
 FX_MAX: .long 10000
