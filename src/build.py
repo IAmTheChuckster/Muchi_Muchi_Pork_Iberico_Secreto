@@ -18,8 +18,10 @@ ORIG_ZIP = sys.argv[1]
 OUT_ZIP = sys.argv[2]
 RAM_DUMP = sys.argv[3] if len(sys.argv) > 3 else None
 
-ROM_OFF = 0x1F0000            # blank (0xFF) area in the program ROM
-RUN_BASE = 0x80000000 | ROM_OFF   # executed from ROM via cached P1 address
+ROM_OFF = 0x1F0000            # blank (0xFF) area in the program ROM where the patch is stored
+ROM_ADDR = 0x80000000 | ROM_OFF   # its address as seen by the CPU
+RUN_BASE = 0x0C04C000         # the patch runs from RAM here (unused by the game; 0C04F800+ is the patch's own RAM)
+RUN_LIMIT = 0x0C04F800
 TEXT_RENDER = 0x0C061070      # game's text-layer redraw routine
 MAIN = 0x0C0603D0             # game main, original target of boot literal at 0x1C4
 
@@ -732,7 +734,7 @@ LW_P1: .long 0x0C510B28
 LW_CNT: .long 0x0C04F834
 LW_MAX: .long 10000
 
-; ---------- ARRANGE HUD: the FEVER counter (0C04F834) in place of the mode label; 2P works as normal ----------
+; ---------- ARRANGE HUD: the FEVER counter (0C04F834) bottom left above the bomb meter; 2P works as normal ----------
 ahud:
   mov.l AH_ARR,r0
   mov.l @r0,r0
@@ -747,16 +749,10 @@ ah_on:
   nop
   lds.l @r15+,pr
 ; full 2P: the 2P label, score, join prompts and inputs are left alone.
-; column 37 rows 11-18 (where the mode label goes, under the hi-score): 3 blanks and the counter,
-; 5 digits right-aligned, in the label colour
+; column 3 rows 0-4 (bottom left, just above the 1P bomb meter): the counter, up to 5 digits left-aligned,
+; in the label colour
   mov.l AH_C36F,r2
   mov.l AH_LCOL,r7
-  mov #32,r0
-  or r7,r0
-  mov.l r0,@r2
-  mov.l r0,@(4,r2)
-  mov.l r0,@(8,r2)
-  add #12,r2
   mov.l AH_CNT,r0
   mov.l @r0,r3
   mova AH_POW,r0
@@ -781,13 +777,11 @@ ah_dig:
   bf ah_put
   mov r1,r0
   cmp/eq #1,r0
-  bt ah_zero
-  mov #32,r4
-  bra ah_put
-  nop
-ah_zero:
-  mov #48,r4
-  bra ah_put
+  bt ah_put
+; leading zero: skipped (left-aligned)
+  dt r1
+  bf ah_d
+  bra ah_pad
   nop
 ah_nz:
   mov #1,r6
@@ -795,10 +789,22 @@ ah_put:
   mov r4,r0
   or r7,r0
   mov.l r0,@r2
-  dt r1
-  bf/s ah_d
   add #4,r2
-; redraw column 37
+  dt r1
+  bf ah_d
+; blank the rest of the 5 cells
+ah_pad:
+  mov.l AH_PEND,r3
+  mov #32,r0
+  or r7,r0
+ah_pb:
+  cmp/hs r3,r2
+  bt ah_pd
+  mov.l r0,@r2
+  bra ah_pb
+  add #4,r2
+ah_pd:
+; redraw column 3
   mov.l AH_DIRTY,r2
   mov #1,r0
   rts
@@ -809,8 +815,9 @@ AH_FX: .long arrfx
 AH_CNT: .long 0x0C04F834
 AH_C39: .long 0x0C484CEC
 AH_C38: .long 0x0C484C70
-AH_C36F: .long 0x0C484BD4
-AH_DIRTY: .long 0x0C4EADC0
+AH_C36F: .long 0x0C483BB8
+AH_PEND: .long 0x0C483BCC
+AH_DIRTY: .long 0x0C4EACB0
 AH_LCOL: .long 0x60308000
 AH_SCOL: .long 0x80808000
 AH_BLANK: .long 0x80602020
@@ -2458,8 +2465,34 @@ def main():
     cell_top = 0x0C483A50 + (MENU_COL * 30 + MENU_ROW) * 4
     dirty_bottom = 0x0C4EAC98 + (MENU_COL - 4) * 8
     body = SRC.replace('CELL_TOP', hex(cell_top)).replace('DIRTY_BOTTOM', hex(dirty_bottom)).replace('#ARROW', f'#{ARROW}').replace('FEVER_SPEED', str(FEVER_SPEED))
+    stub = '''romstub:
+; boot entry (0x1C4 points here, in ROM): copy the whole patch into RAM and continue there, so none of it runs
+; out of the program ROM during play
+  mov.l RS_SRC,r1
+  mov.l RS_DST,r2
+  mov.l RS_LEN,r3
+rs_l:
+  mov.l @r1+,r0
+  mov.l r0,@r2
+  dt r3
+  bf/s rs_l
+  add #4,r2
+  mov.l RS_GO,r0
+  jmp @r0
+  nop
+  .align 4
+RS_SRC: .long ROMADDR
+RS_DST: .long RUNBASE
+RS_LEN: .long CODELONGS
+RS_GO: .long patcher
+'''.replace('ROMADDR', hex(ROM_ADDR)).replace('RUNBASE', hex(RUN_BASE))
+    body = stub + body
     src = body + table_src() + warn_src() + '  .align 4\nsites:\n' + ''.join(f'  .long 0x{a:08x}, 0x{o:08x}, {t}\n' for a, o, t in sites) + '  .long 0\n'
-    code, labels = Asm(RUN_BASE).assemble(src)
+    code, labels = Asm(RUN_BASE).assemble(src.replace('CODELONGS', '0'))
+    longs = (len(code) + 3) // 4
+    code, labels = Asm(RUN_BASE).assemble(src.replace('CODELONGS', str(longs)))
+    assert RUN_BASE + longs * 4 <= RUN_LIMIT, 'patch too big for its RAM area'
+    assert labels['romstub'] == RUN_BASE
 
     z = zipfile.ZipFile(ORIG_ZIP)
     u4 = bytearray(z.read('u4'))
@@ -2467,7 +2500,7 @@ def main():
     assert all(b == 0xFF for b in be[ROM_OFF:ROM_OFF + len(code)]), 'target area not blank'
     assert struct.unpack('>I', be[0x1C4:0x1C8])[0] == MAIN
     be[ROM_OFF:ROM_OFF + len(code)] = code
-    be[0x1C4:0x1C8] = struct.pack('>I', labels['patcher'])
+    be[0x1C4:0x1C8] = struct.pack('>I', ROM_ADDR)   # romstub, run from ROM once at boot
     sw = bytearray(len(be)); sw[0::2] = be[1::2]; sw[1::2] = be[0::2]
     with zipfile.ZipFile(OUT_ZIP, 'w', zipfile.ZIP_DEFLATED) as o:
         for n in z.namelist():

@@ -17,7 +17,7 @@ I did all the testing and planning.
   - Move the arrow with the joystick and press Start.
   - The arrow starts on ARCADE every time.
   - Harahara and Manpuku are unlocked, so the codes aren't needed.
-- **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with the FEVER counter shown under the hi-score (where the mode name goes in V1.01+).
+- **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with the FEVER counter shown at the bottom left, just above the 1P bomb meter.
   - One loop: after the last boss the ending plays and the game is over.
   - An extra life every 30,000,000 points (instead of the normal score extends).
   - Two players can play. Fever, juggling and the FEVER counter follow player 1.
