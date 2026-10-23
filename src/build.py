@@ -118,7 +118,7 @@ def patch_sites(ram):
             assert rd(a) == old, hex(a)
     return sites
 
-FEVER_SPEED = 90   # game speed in Fever mode, percent of normal (100 = normal, 90 = 10% slower, 110 = 10% faster)
+FEVER_SPEED = 75   # game speed in Fever mode, percent of normal (100 = normal, 90 = 10% slower, 110 = 10% faster)
 MENU_COL = 23   # top line of the menu (text-layer column; game draws the mode name at column 20, row 11)
 MENU_ROW = 9
 ARROW = 0x3E

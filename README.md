@@ -22,7 +22,7 @@ I did all the testing and planning.
   - **Medal juggling.** Hitting a medal with the lard shot splits it into two medals one value step higher (100 → 200 → … → 10000), at most once every 15 frames per medal and up to 64 medals on screen. 10000 medals are collected automatically.
   - **FEVER counter.** Every medal collected adds a tenth of its value (100 adds 10 … 10000 adds 1000), up to 10000.
   - **Fever mode.** With the counter at 10000, pressing bomb starts Fever instead of a bomb: the lard meter is filled, every enemy bullet turns into a 10000 medal, the counter counts down 10 per frame, and every medal is a 10000 medal. Fever ends when the counter reaches 0 or when you are hit (the counter stops where it was).
-  - **Fever speed.** The game runs at 90% speed during Fever.
+  - **Fever speed.** The game runs at 75% speed during Fever.
   - **Extra bomb on respawn.** After losing a life you come back with one more bomb than you had when you were hit (up to 4), and never fewer than the game normally gives.
 - **V1.01+ mode.** Arcade with these changes: 
   - Pigs fill the lard meter twice as fast, and the lard shot lasts twice as long.
