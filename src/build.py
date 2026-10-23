@@ -126,7 +126,7 @@ def patch_sites(ram):
             assert rd(a) == old, hex(a)
     return sites
 
-FEVER_SPEED = 100   # unused: Fever speed is a fixed 50% in fevspeed (SP_500)
+FEVER_SPEED = 100   # unused: Fever speed follows the enemy bullet count (fevspeed)
 MENU_COL = 23   # top line of the menu (text-layer column; game draws the mode name at column 20, row 11)
 MENU_ROW = 9
 ARROW = 0x3E
@@ -770,9 +770,61 @@ fevspeed:
   mov.l @r0,r0
   tst r0,r0
   bt sp_norm
-; Fever speed: a fixed 50% (in tenths of a percent)
+; Fever speed in tenths of a percent from the enemy bullets on screen (n, both bullet lists):
+; n <= 100: 1000 - 3n (100% .. 70%), 100 < n < 150: 700 - 4(n - 100) (70% .. 50%), n >= 150: 500
   mov.l r3,@-r15
   mov.l r5,@-r15
+  mov.l SP_BPOOL,r1
+  mov.w SP_N1,r5
+  mov #0,r3
+sp_cnt:
+  mov.l @r1,r0
+  tst r0,r0
+  bt sp_c1
+  add #1,r3
+sp_c1:
+  dt r5
+  bf/s sp_cnt
+  add #92,r1
+  mov.l SP_P2,r1
+  mov.w SP_N2,r5
+sp_cnt2:
+  mov.l @r1,r0
+  tst r0,r0
+  bt sp_c2
+  mov.l @(4,r1),r0
+  mov.l SP_HLO,r2
+  cmp/hs r2,r0
+  bf sp_c2
+  mov.l SP_HHI,r2
+  cmp/hs r2,r0
+  bt sp_c2
+  add #1,r3
+sp_c2:
+  mov.w SP_S2,r0
+  add r0,r1
+  dt r5
+  bf sp_cnt2
+  mov #100,r0
+  cmp/hi r0,r3
+  bt sp_hi
+  mov r3,r2
+  add r2,r2
+  add r3,r2
+  mov.w SP_1000,r0
+  sub r2,r0
+  bra sp_acc
+  mov r0,r2
+sp_hi:
+  mov.w SP_150,r0
+  cmp/hs r0,r3
+  bt sp_min
+  add #-100,r3
+  shll2 r3
+  mov.w SP_700,r2
+  bra sp_acc
+  sub r3,r2
+sp_min:
   mov.w SP_500,r2
 sp_acc:
   mov.l @r15+,r5
@@ -852,10 +904,16 @@ SP_BPOOL: .long 0x0C4C371C
 SP_VBL: .long 0x0C002310
 SP_LASTV: .long 0x0C04F870
 SP_BCNT: .long 0x0C5108FC
+SP_P2: .long 0x0C4EC6F8
+SP_HLO: .long 0x0C0D0000
+SP_HHI: .long 0x0C0E0000
 SP_1000: .word 1000
 SP_700: .word 700
 SP_500: .word 500
 SP_150: .word 150
+SP_N1: .word 1536
+SP_N2: .word 256
+SP_S2: .word 144
   .align 4
 
 ; ---------- ARRANGE+: player hit (tail-jumped to from 0C074486 / 0C074848, r4 = player). During Fever, or with
@@ -1002,7 +1060,7 @@ MC_POOL: .long 0x0C52B648
 MC_MAX: .long 10000
 MC_ORIG: .long 0x0C090000
 MC_FRAC: .long 0x0C04F854
-MC_ADD: .long 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200
+MC_ADD: .long 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300
 
 ; ---------- ARRANGE per-step effects (called from ahud): Fever start/countdown/end, medal juggling, 10000 medals pulled to the player ----------
 ; patch RAM: 0C04F834 counter, 0C04F838 fever flag, 0C04F83C last step, 0C04F840 last player state byte, 0C04FA00.. per-item split step (word x 200)
@@ -1053,6 +1111,19 @@ fx_run:
   mov.l r0,@r1
 fx_g0:
   mov.l FX_P1,r12
+; extends every 30,000,000: the game's next-extend score (+0x22C) is kept at the next multiple above the score
+  mov.l FX_O228,r0
+  mov.l @(r0,r12),r1
+  mov.l FX_EXT,r2
+  mov r2,r3
+fx_ex:
+  cmp/hi r1,r3
+  bt fx_exd
+  bra fx_ex
+  add r2,r3
+fx_exd:
+  add #4,r0
+  mov.l r3,@(r0,r12)
 ; ---- extra bomb on respawn: keep the bombs held at the moment of the hit, give them back +1 (max 4) ----
   mov.b @r12,r0
   extu.b r0,r0
@@ -1547,6 +1618,8 @@ FX_O214L: .long 0x00000214
 FX_LAST: .long 0x0C04F83C
 FX_PST: .long 0x0C04F840
 FX_P1: .long 0x0C510B28
+FX_O228: .long 0x00000228
+FX_EXT: .long 30000000
 FX_FEV: .long 0x0C04F838
 FX_CNT: .long 0x0C04F834
 FX_MAX: .long 10000
