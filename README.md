@@ -13,15 +13,16 @@ I did all the testing and planning.
 
 - **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, under the hi-score. It stops while the game is paused.
 - **Main-body health.** Shown under the timer and counts down to 0 when the part is destroyed.
-- **Title menu.** After a coin is inserted, or straight away on free play, the title shows **ARCADE / HARAHARA / MANPUKU / V1.01+ / ARRANGE**.
+- **Title menu.** After a coin is inserted, or straight away on free play, the title shows **ARCADE / HARAHARA / MANPUKU / V1.01+ / ARRANGE+**.
   - Move the arrow with the joystick and press Start.
   - The arrow starts on ARCADE every time.
   - Harahara and Manpuku are unlocked, so the codes aren't needed.
-- **ARRANGE mode.** Starts as a copy of V1.01+ (all of the changes below), with "ARRANGE" shown under the hi-score. New Arrange features will be added on top.
+- **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with "ARRANGE+" shown under the hi-score.
   - One player only: 2P can't join, the 2P prompts are hidden, "2P" reads FEVER and the 2P score shows the FEVER counter.
   - **Medal juggling.** Hitting a medal with the lard shot splits it into two medals one value step higher (100 → 200 → … → 10000), at most once every 15 frames per medal and up to 64 medals on screen. 10000 medals are collected automatically.
   - **FEVER counter.** Every medal collected adds a tenth of its value (100 adds 10 … 10000 adds 1000), up to 10000.
   - **Fever mode.** With the counter at 10000, pressing bomb starts Fever instead of a bomb: every enemy bullet turns into a 10000 medal, the counter counts down 10 per frame, and every medal is a 10000 medal. Fever ends when the counter reaches 0 or when you are hit (the counter stops where it was).
+  - **Extra bomb on respawn.** After losing a life you come back with one more bomb than you had when you were hit (up to 4), and never fewer than the game normally gives.
 - **V1.01+ mode.** Arcade with these changes: 
   - Pigs fill the lard meter twice as fast, and the lard shot lasts twice as long.
   - Three loops, each one following the last whether or not you died or bombed. Loop 3 plays with Manpuku rules.
