@@ -612,6 +612,9 @@ wrapper:
   mov.l LW_TIMER,r0
   jsr @r0
   nop
+  mov.l LW_AHUD,r0
+  jsr @r0
+  nop
   mov.l @r15+,r7
   mov.l @r15+,r6
   mov.l @r15+,r5
@@ -622,8 +625,121 @@ wrapper:
   nop
   .align 4
 LW_TIMER: .long timer
+LW_AHUD: .long ahud
 LW_SEL: .long 0x0C04F824
 LW_ORIG: .long 0x0C061070
+
+; ---------- ARRANGE HUD (1-player mode): "2p" becomes FEVER, the 2P score shows the counter (0C04F834), no 2P join ----------
+ahud:
+  mov.l AH_ARR,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bf ah_on
+  rts
+  nop
+ah_on:
+; hide the 2P Start button (bit 0x80 of the P2 input copies)
+  mova AH_P2IN,r0
+  mov r0,r6
+  mov #6,r7
+  mov #127,r4
+ah_blk:
+  mov.l @r6+,r2
+  mov.b @r2,r0
+  and r4,r0
+  mov.b r0,@r2
+  dt r7
+  bf ah_blk
+; column 39 rows 21-25: FEVER (same colour as the 2p label)
+  mov.l AH_C39,r2
+  mov.l AH_LCOL,r7
+  mova AH_FTXT,r0
+  mov r0,r5
+  mov #5,r1
+ah_f:
+  mov.b @r5+,r0
+  or r7,r0
+  mov.l r0,@r2
+  dt r1
+  bf/s ah_f
+  add #4,r2
+; columns 36-37 rows 19-29: blank the 2P join prompts
+  mov.l AH_C36,r2
+  mov.l AH_BLANK,r0
+  mov #11,r1
+ah_b:
+  mov.l r0,@r2
+  mov r2,r3
+  add #120,r3
+  mov.l r0,@r3
+  dt r1
+  bf/s ah_b
+  add #4,r2
+; column 38 rows 20-29: counter, right-aligned, 10 digits, leading blanks
+  mov.l AH_CNT,r0
+  mov.l @r0,r3
+  mov.l AH_C38,r2
+  mov.l AH_SCOL,r7
+  mova AH_POW,r0
+  mov r0,r5
+  mov #10,r1
+  mov #0,r6
+ah_d:
+  mov.l @r5+,r4
+  mov #48,r0
+ah_sub:
+  cmp/hs r4,r3
+  bf ah_dig
+  sub r4,r3
+  bra ah_sub
+  add #1,r0
+ah_dig:
+  mov r0,r4
+  mov #48,r0
+  cmp/eq r0,r4
+  bf ah_nz
+  tst r6,r6
+  bf ah_put
+  mov r1,r0
+  cmp/eq #1,r0
+  bt ah_zero
+  mov #32,r4
+  bra ah_put
+  nop
+ah_zero:
+  mov #48,r4
+  bra ah_put
+  nop
+ah_nz:
+  mov #1,r6
+ah_put:
+  mov r4,r0
+  or r7,r0
+  mov.l r0,@r2
+  dt r1
+  bf/s ah_d
+  add #4,r2
+; redraw columns 36-39
+  mov.l AH_DIRTY,r2
+  mov #1,r0
+  mov.l r0,@r2
+  mov.l r0,@(8,r2)
+  mov.l r0,@(16,r2)
+  rts
+  mov.l r0,@(24,r2)
+  .align 4
+AH_ARR: .long 0x0C04F830
+AH_CNT: .long 0x0C04F834
+AH_C39: .long 0x0C484CEC
+AH_C38: .long 0x0C484C70
+AH_C36: .long 0x0C484B7C
+AH_DIRTY: .long 0x0C4EADB8
+AH_LCOL: .long 0x60308000
+AH_SCOL: .long 0x80808000
+AH_BLANK: .long 0x80602020
+AH_P2IN: .long 0x0C481DF9, 0x0C481E39, 0x0C481E79, 0x0C481EFD, 0x0C481F3D, 0x0C481F7D
+AH_POW: .long 1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1
+AH_FTXT: .long 0x46455645, 0x52000000
 
 ; ---------- timer: find timed boss/midboss, draw seconds remaining ----------
 timer:
