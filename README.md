@@ -56,7 +56,7 @@ python3 mmpork_patch.py mmpork.zip --zip --mra
 - A loose u4 can be given instead of the zip: `python3 mmpork_patch.py u4`.
 
 ### Using the patched files
-- **MAME:** put `mmporkibc.zip` in your roms folder next to `mmpork.zip`, or replace u4 in a copy of the mmpork set with `iberico_u4` (renamed to u4); MAME will report a checksum mismatch, which is expected.
+- **MAME:** MAME doesn't know the `mmporkibc` set, so make a copy of your mmpork set (keep the original safe), replace its u4 with `iberico_u4` renamed to `u4`, and run `mame mmpork`. MAME will warn about a wrong checksum; that is expected.
 - **MiSTer (CV1k core):** copy `mmporkibc.zip` to your `games/mame` folder and the `.mra` to `_Arcade`.
 
 ## Testing
