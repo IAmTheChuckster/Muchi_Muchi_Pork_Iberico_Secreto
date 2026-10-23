@@ -13,7 +13,7 @@ emu.register_frame_done(function()
   if n>0 and frame>7000 and not HOLD then HOLD=frame; print("medal appears",frame,s) end
   if HOLD and frame>=HOLD and frame<HOLD+400 then set_nofire(true); d["P1 Button 1"]:clear_value(); d["P1 Button 2"]:set_value(1) end
   if HOLD and frame==HOLD+400 then d["P1 Button 2"]:clear_value() end
-  if HOLD and frame>=HOLD and frame<HOLD+400 and (frame-HOLD)%20==0 then print(frame-HOLD,"P",sp:read_u32(B+28)>>16,sp:read_u32(B+32)>>16,"mech",(sp:read_u32(B)>>13)&1,"n",n,s:sub(1,120)) if (frame-HOLD)%60==0 then manager.machine.video:snapshot() end end
+  if HOLD and frame>=HOLD and frame<HOLD+400 and (frame-HOLD)%20==0 then print(frame-HOLD,"P",sp:read_u32(B+28)>>16,sp:read_u32(B+32)>>16,"mech",(sp:read_u32(B)>>13)&1,"n",n,s:sub(1,160),"cnt",sp:read_u32(0x0c04f834),"frac",sp:read_u32(0x0c04f854)) if (frame-HOLD)%60==0 then manager.machine.video:snapshot() end end
   if HOLD and frame==HOLD+401 then manager.machine:exit() end
   if frame>20000 then manager.machine:exit() end
 end)
