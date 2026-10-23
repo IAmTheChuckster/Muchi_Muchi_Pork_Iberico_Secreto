@@ -1141,6 +1141,20 @@ fx_ne:
   nop
 fx_run:
   mov.l r13,@r1
+; only while playing: the player state byte is 00 before a game, 80/C0 on the start and character select
+; screens (running here then interfered with the select screen, e.g. Rafute's select voice on a fresh boot)
+  mov.l FX_P1,r0
+  mov.b @r0,r0
+  tst r0,r0
+  bt fx_idle
+  cmp/eq #-128,r0
+  bt fx_idle
+  cmp/eq #-64,r0
+  bf fx_play
+fx_idle:
+  bra fx_out
+  nop
+fx_play:
 ; grace steps after a Fever-ending hit
   mov.l FX_GRACE,r1
   mov.l @r1,r0
