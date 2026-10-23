@@ -1,11 +1,5 @@
 # # Muchi Muchi Pork! Smoked Bacon
-## To Do
-1. New Arrange mode using v1.01+ as a base and based off of the 360 mode
-   a. lard attack splits items doubles them and they get sucked in when they reach 10000<br>
-   b. fever meter from 0-10000<br>
-   c. grazing fills fever meter<br>
-   d. pressing on the bombu, or getting hit sets off the fever meter at this point the mode is manpuku difficulty, getting hit in fever mode cancels out of it and resets the meter.<br>
-   
+  
 A patch for **Muchi Muchi Pork!** (2007/ 4/17 MASTER VER.)<br>
 This repository holds only source, tools and notes. **No ROM data is included**; you patch your own legally owned dump.
 
