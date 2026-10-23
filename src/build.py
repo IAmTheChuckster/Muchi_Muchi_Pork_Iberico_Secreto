@@ -117,6 +117,8 @@ def patch_sites(ram):
         (0x0C0783AC, 0x00090009, 'bombhook'),    #   literal in unreachable padding after rts
         (0x0C06F994, 0x607288FF, '0xD0B8402B'),  # game loop skip test -> mov.l @(0C06FC78),r0 / jmp @r0
         (0x0C06F998, 0x8D6BEA00, '0x0009EA00'),  #   nop (delay slot); fevspeed decides skip or run
+        (0x0C074598, 0x0C07DDF0, 'hithook'),     # ARRANGE+: player-hit call (tail jump) -> a hit in Fever ends Fever instead
+        (0x0C0748FC, 0x0C07DDF0, 'hithook'),     #   second player-hit call
         (0x0C06FC78, 0x00090009, 'fevspeed'),    #   literal in padding after the literal pool  #   second part starts at row 15 (was 16)
     ]
     if ram is not None:
@@ -124,7 +126,7 @@ def patch_sites(ram):
             assert rd(a) == old, hex(a)
     return sites
 
-FEVER_SPEED = 100   # game speed in Fever mode, percent of normal (100 = normal, 90 = 10% slower, 110 = 10% faster)
+FEVER_SPEED = 100   # unused since build 30: Fever speed now follows the enemy bullet count (fevspeed)
 MENU_COL = 23   # top line of the menu (text-layer column; game draws the mode name at column 20, row 11)
 MENU_ROW = 9
 ARROW = 0x3E
@@ -768,12 +770,80 @@ fevspeed:
   mov.l @r0,r0
   tst r0,r0
   bt sp_norm
+; speed in tenths of a percent from the enemy bullets on screen (n):
+; n <= 100: 1000 - 3n (100% .. 70%), 100 < n < 150: 700 - 4(n - 100) (70% .. 50%), n >= 150: 500
+  mov.l r3,@-r15
+  mov.l r5,@-r15
+  mov.l SP_BPOOL,r1
+  mov.l SP_BCNT,r0
+  mov.l @r0,r5
+  mov #0,r3
+  tst r5,r5
+  bt sp_cdone
+sp_cnt:
+  mov.l @r1,r0
+  tst r0,r0
+  bt sp_c1
+  add #1,r3
+sp_c1:
+  dt r5
+  bf/s sp_cnt
+  add #92,r1
+sp_cdone:
+  mov #100,r0
+  cmp/hi r0,r3
+  bt sp_hi
+  mov r3,r2
+  add r2,r2
+  add r3,r2
+  mov.w SP_1000,r0
+  sub r2,r0
+  bra sp_acc
+  mov r0,r2
+sp_hi:
+  mov.w SP_150,r0
+  cmp/hs r0,r3
+  bt sp_min
+  add #-100,r3
+  shll2 r3
+  mov.w SP_700,r2
+  bra sp_acc
+  sub r3,r2
+sp_min:
+  mov.w SP_500,r2
+sp_acc:
+  mov.l @r15+,r5
+  mov.l @r15+,r3
+; real frames since the last call (vblank count 0C002310), 1..3: the game drops to 30 Hz when busy,
+; so the speed is measured against real time, not against game frames
+  mov.l SP_VBL,r0
+  mov.l @r0,r0
+  mov.l SP_LASTV,r1
+  mov.l @r1,r4
+  mov.l r0,@r1
+  sub r4,r0
+  mov #1,r4
+  cmp/hs r4,r0
+  bt sp_e1
+  mov #1,r0
+sp_e1:
+  mov #3,r4
+  cmp/hi r4,r0
+  bf sp_e2
+  mov #3,r0
+sp_e2:
+  mov r2,r4
+sp_m:
+  dt r0
+  bt sp_md
+  bra sp_m
+  add r4,r2
+sp_md:
   mov.l SP_ACC,r1
   mov.l @r1,r0
-  mov.w SP_SPEED,r2
   add r2,r0
   mov #0,r2
-  mov #100,r4
+  mov.w SP_1000,r4
 sp_div:
   cmp/hs r4,r0
   bf sp_set
@@ -784,6 +854,12 @@ sp_set:
   mov.l r0,@r1
   tst r2,r2
   bt sp_skip
+; at most 2 updates per call
+  mov #2,r0
+  cmp/hi r0,r2
+  bf sp_cap
+  mov r0,r2
+sp_cap:
   add #-1,r2
   bra sp_go
   mov.l r2,@r7
@@ -809,8 +885,52 @@ SP_ARR: .long 0x0C04F830
 SP_ACC: .long 0x0C04F850
 SP_RUN: .long 0x0C06F99C
 SP_SKIP: .long 0x0C06FA72
-SP_SPEED: .word FEVER_SPEED
+SP_BPOOL: .long 0x0C4C371C
+SP_VBL: .long 0x0C002310
+SP_LASTV: .long 0x0C04F870
+SP_BCNT: .long 0x0C5108FC
+SP_1000: .word 1000
+SP_700: .word 700
+SP_500: .word 500
+SP_150: .word 150
   .align 4
+
+; ---------- ARRANGE+: player hit (tail-jumped to from 0C074486 / 0C074848, r4 = player). During Fever the hit
+; does not kill: it asks arrfx to end Fever (same request as the bomb) and gives 90 steps of grace, so the bullet
+; or enemy that hit cannot kill straight after. Otherwise the game's hit routine 0C07DDF0 runs as normal. ----------
+hithook:
+  mov.l HH_ARR,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bt hh_go
+  tst r4,r4
+  bf hh_go
+  mov.l HH_GRACE,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bf hh_skip
+  mov.l HH_FEV,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bt hh_go
+  mov #90,r0
+  mov.l r0,@r1
+  mov.l HH_REQ,r1
+  mov #1,r0
+  mov.l r0,@r1
+hh_skip:
+  rts
+  nop
+hh_go:
+  mov.l HH_HIT,r0
+  jmp @r0
+  nop
+  .align 4
+HH_ARR: .long 0x0C04F830
+HH_FEV: .long 0x0C04F838
+HH_REQ: .long 0x0C04F868
+HH_GRACE: .long 0x0C04F86C
+HH_HIT: .long 0x0C07DDF0
 
 ; ---------- ARRANGE+: bomb button check (jumped to from 0C078302; r0 = buttons, r8 = player). In ARRANGE+, when the
 ; FEVER counter is full or Fever is on, C does not bomb: it sets the request flag 0C04F868 for arrfx instead.
@@ -933,6 +1053,14 @@ arrfx:
   nop
 fx_run:
   mov.l r13,@r1
+; grace steps after a Fever-ending hit
+  mov.l FX_GRACE,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt fx_g0
+  add #-1,r0
+  mov.l r0,@r1
+fx_g0:
   mov.l FX_P1,r12
 ; ---- extra bomb on respawn: keep the bombs held at the moment of the hit, give them back +1 (max 4) ----
   mov.b @r12,r0
@@ -1155,7 +1283,7 @@ fx_beam:
   add r1,r1
   cmp/hs r1,r0
   bt fx_mn
-; cooldown: 15 steps since this medal last split
+; cooldown: 8 steps since this medal last split
   mov r11,r0
   add r0,r0
   mov.l FX_CD,r1
@@ -1164,7 +1292,7 @@ fx_beam:
   mov r13,r3
   sub r2,r3
   extu.w r3,r3
-  mov #15,r2
+  mov #8,r2
   cmp/hs r2,r3
   bf fx_mn
   mov.w r13,@r1
@@ -1174,8 +1302,9 @@ fx_beam:
   mov.l r0,@(8,r8)
   bsr medgfx
   nop
-; split into two while there are fewer than 64 medals
+; split into two while there are fewer than 128 medals
   mov #64,r0
+  add r0,r0
   cmp/hs r0,r9
   bt fx_mn
   bsr medclone
@@ -1244,7 +1373,7 @@ mcl_cp:
   mov.l FX_IVEL,r0
   jsr @r0
   mov r11,r4
-; nudge the two halves apart: both up 0.5-2.5 px/frame, one left and one right at 0.5-1.5 px/frame
+; push the two halves apart: both up 0.5-2.5 px/frame, one left and one right at 2-4 px/frame
   mov.l @r15+,r4
   bsr scatter
   mov #0,r5
@@ -1352,6 +1481,7 @@ s10_out:
 FX_STEP: .long 0x0C4857C4
 FX_RS: .long 0x0C04F844
 FX_BREQ: .long 0x0C04F868
+FX_GRACE: .long 0x0C04F86C
 FX_MODE1: .long 0x0C4EAC3C
 FX_MODE2: .long 0x0C48227F
 FX_MODE3: .long 0x0C516FDC
@@ -1360,8 +1490,8 @@ FX_CHAIN: .long 0x0C53F4A4
 FX_RAND: .long 0x0C06B450
 FX_RMASK: .long 0x0001FFFF
 FX_VMIN: .long 0x00008000
-FX_HOFF: .long 0x00008000
-FX_HMASK: .long 0x0000FFFF
+FX_HOFF: .long 0x00020000
+FX_HMASK: .long 0x0001FFFF
 FX_LARD: .long 0x0000020E
 FX_O214L: .long 0x00000214
 FX_LAST: .long 0x0C04F83C
