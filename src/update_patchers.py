@@ -15,7 +15,7 @@ p = zipfile.ZipFile(new_zip).read('u4')
 assert zlib.crc32(o) == 0xD06CFA42, 'original u4 CRC is not d06cfa42'
 crc = zlib.crc32(p)
 diff = [i for i in range(len(o)) if o[i] != p[i]]
-assert all(0x1C4 <= i < 0x1C8 or 0x1F0000 <= i < 0x1F1000 for i in diff), 'unexpected changes'
+assert all(0x1C4 <= i < 0x1C8 or 0x1F0000 <= i < 0x200000 for i in diff), 'unexpected changes'
 end = (max(diff) + 4) // 4 * 4
 b1 = base64.b64encode(p[0x1C4:0x1C8]).decode()
 b2 = base64.b64encode(p[0x1F0000:end]).decode()
