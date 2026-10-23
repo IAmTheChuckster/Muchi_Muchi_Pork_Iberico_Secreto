@@ -17,5 +17,5 @@ emu.register_frame_done(function()
   last=st
   if frame>3000 and still==300 then print("FROZEN at",frame,string.format("pc=%08x",manager.machine.devices[":maincpu"].state["PC"].value),"fev",sp:read_u32(0x0c04f838)); manager.machine:exit() end
   if frame%5000==0 then local n=0; for k=0,199 do local a=0x0c52b648+k*120; if sp:read_u32(a)~=0 then n=n+1 end end; print(frame,"fever frames so far",fv,"items",n) end
-  if frame==36000 then print("no freeze"); manager.machine:exit() end
+  if frame==36000 then local f=io.open("/tmp/claude-0/-home-claude/07762dfb-baac-5115-bea4-20e9ebaf285a/scratchpad/ramcode.bin","wb"); for i=0,6283,4 do local v=sp:read_u32(0x0c04c000+i); f:write(string.pack(">I4",v)) end; f:close(); print("no freeze"); manager.machine:exit() end
 end)
