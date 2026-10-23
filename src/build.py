@@ -649,6 +649,16 @@ wrapper:
   mov #0,r0
   mov.l LW_SEL,r1
   mov.l r0,@r1
+; ARRANGE+ display and revenge flag only during play: the player state byte is 00 before a game and 80/C0 on
+; the start and character select screens, which then run exactly as in V1.01+
+  mov.l LW_P1,r1
+  mov.b @r1,r0
+  tst r0,r0
+  bt lw_idle
+  cmp/eq #-128,r0
+  bt lw_idle
+  cmp/eq #-64,r0
+  bt lw_idle
 ; revenge bullets (enemies fire when destroyed): on in Manpuku as in the original, and in ARRANGE+ while the
 ; FEVER counter is full or Fever is on
   mov.l LW_MODE,r1
@@ -687,6 +697,7 @@ lw_rvs:
   mov.l LW_AHUD,r0
   jsr @r0
   nop
+lw_back:
   mov.l @r15+,r7
   mov.l @r15+,r6
   mov.l @r15+,r5
@@ -694,6 +705,18 @@ lw_rvs:
   lds.l @r15+,pr
   mov.l LW_ORIG,r0
   jmp @r0
+  nop
+; not playing: boss timer only (as in the other modes)
+lw_idle:
+  sts.l pr,@-r15
+  mov.l r4,@-r15
+  mov.l r5,@-r15
+  mov.l r6,@-r15
+  mov.l r7,@-r15
+  mov.l LW_TIMER,r0
+  jsr @r0
+  nop
+  bra lw_back
   nop
   .align 4
 LW_TIMER: .long timer
@@ -704,6 +727,7 @@ LW_MODE: .long 0x0C4EAC3C
 LW_ARR: .long 0x0C04F830
 LW_FEV: .long 0x0C04F838
 LW_RV: .long 0x0C04F888
+LW_P1: .long 0x0C510B28
 LW_CNT: .long 0x0C04F834
 LW_MAX: .long 10000
 
