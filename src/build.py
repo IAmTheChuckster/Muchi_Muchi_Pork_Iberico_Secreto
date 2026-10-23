@@ -110,7 +110,8 @@ def patch_sites(ram):
         (0x0C0E2B24, 0x0C08F8E0, 'dbl_sp'),      # item type table: small power-up collect
         (0x0C0E2B44, 0x0C08FC00, 'dbl_bp'),      #   big power-up collect
         (0x0C0E2B64, 0x0C08FCC0, 'dbl_sb'),      #   small bomb collect
-        (0x0C0E2B84, 0x0C08FF20, 'dbl_bb'),      #   big bomb collect  #   second part starts at row 15 (was 16)
+        (0x0C0E2B84, 0x0C08FF20, 'dbl_bb'),      #   big bomb collect
+        (0x0C0E2BC4, 0x0C090000, 'medcol'),      # ARRANGE: medal collect -> FEVER counter  #   second part starts at row 15 (was 16)
     ]
     if ram is not None:
         for a, old, _ in sites:
@@ -638,6 +639,11 @@ ahud:
   rts
   nop
 ah_on:
+  sts.l pr,@-r15
+  mov.l AH_FX,r0
+  jsr @r0
+  nop
+  lds.l @r15+,pr
 ; hide the 2P Start button (bit 0x80 of the P2 input copies)
   mova AH_P2IN,r0
   mov r0,r6
@@ -729,6 +735,7 @@ ah_put:
   mov.l r0,@(24,r2)
   .align 4
 AH_ARR: .long 0x0C04F830
+AH_FX: .long arrfx
 AH_CNT: .long 0x0C04F834
 AH_C39: .long 0x0C484CEC
 AH_C38: .long 0x0C484C70
@@ -740,6 +747,389 @@ AH_BLANK: .long 0x80602020
 AH_P2IN: .long 0x0C481DF9, 0x0C481E39, 0x0C481E79, 0x0C481EFD, 0x0C481F3D, 0x0C481F7D
 AH_POW: .long 1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1
 AH_FTXT: .long 0x46455645, 0x52000000
+
+; ---------- ARRANGE: medal value -> FEVER counter (wraps the medal collect handler 0C090000; r4 = player, r5 = item slot) ----------
+medcol:
+  mov.l MC_ARR,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bt mc_go
+  mov.l MC_FEV,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bf mc_go
+  mov #120,r0
+  mulu.w r0,r5
+  sts macl,r1
+  mov.l MC_POOL,r0
+  add r0,r1
+  mov.l @(8,r1),r1
+  mov #18,r0
+  cmp/hi r0,r1
+  bt mc_go
+  shll2 r1
+  mova MC_ADD,r0
+  add r0,r1
+  mov.l @r1,r1
+  mov.l MC_CNT,r2
+  mov.l @r2,r0
+  add r1,r0
+  mov.l MC_MAX,r1
+  cmp/hi r1,r0
+  bf mc_st
+  mov r1,r0
+mc_st:
+  mov.l r0,@r2
+mc_go:
+  mov.l MC_ORIG,r0
+  jmp @r0
+  nop
+  .align 4
+MC_ARR: .long 0x0C04F830
+MC_FEV: .long 0x0C04F838
+MC_CNT: .long 0x0C04F834
+MC_POOL: .long 0x0C52B648
+MC_MAX: .long 10000
+MC_ORIG: .long 0x0C090000
+MC_ADD: .long 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000
+
+; ---------- ARRANGE per-step effects (called from ahud): Fever start/countdown/end, medal juggling, 10000 medals pulled to the player ----------
+; patch RAM: 0C04F834 counter, 0C04F838 fever flag, 0C04F83C last step, 0C04F840 last player state byte, 0C04FA00.. per-item split step (word x 200)
+arrfx:
+  mov.l r8,@-r15
+  mov.l r9,@-r15
+  mov.l r10,@-r15
+  mov.l r11,@-r15
+  mov.l r12,@-r15
+  mov.l r13,@-r15
+  sts.l pr,@-r15
+; only once per game update step (not while paused)
+  mov.l FX_STEP,r0
+  mov.l @r0,r13
+  mov.l FX_LAST,r1
+  mov.l @r1,r2
+  cmp/eq r13,r2
+  bf fx_run
+  bra fx_out
+  nop
+fx_run:
+  mov.l r13,@r1
+  mov.l FX_P1,r12
+; ---- Fever start: counter full and C pressed this frame ----
+  mov.l FX_FEV,r11
+  mov.l @r11,r0
+  tst r0,r0
+  bf fx_infev
+  mov.l FX_CNT,r1
+  mov.l @r1,r0
+  mov.l FX_MAX,r2
+  cmp/hs r2,r0
+  bf fx_juggle
+  mov.l FX_EDGE,r1
+  mov.b @r1,r0
+  tst #64,r0
+  bt fx_juggle
+  mov #1,r0
+  mov.l r0,@r11
+  mov.b @r12,r0
+  mov.l FX_PST,r1
+  mov.b r0,@r1
+; hide this C press from the game (no bomb)
+  mova FX_P1IN,r0
+  mov r0,r6
+  mov #6,r7
+  mov #-65,r4
+fx_cb:
+  mov.l @r6+,r2
+  mov.b @r2,r0
+  and r4,r0
+  mov.b r0,@r2
+  dt r7
+  bf fx_cb
+; cancel every enemy bullet into a 10000 medal (as many as there is room for)
+  mov.l FX_BPOOL,r8
+  mov.l FX_BCNT,r0
+  mov.l @r0,r9
+fx_bl:
+  mov.l @r8,r0
+  tst r0,r0
+  bt fx_bn
+  mov.l @(32,r8),r4
+  mov.l @(36,r8),r5
+  mov #0,r0
+  mov.l r0,@r8
+  bsr spawn10k
+  nop
+fx_bn:
+  dt r9
+  bf/s fx_bl
+  add #92,r8
+  bra fx_juggle
+  nop
+; ---- during Fever: count down 10 per step; a hit ends it ----
+fx_infev:
+  mov.b @r12,r0
+  mov.l FX_PST,r1
+  mov.b @r1,r2
+  cmp/eq r0,r2
+  bt fx_nohit
+  mov #0,r0
+  mov.l r0,@r11
+  bra fx_juggle
+  nop
+fx_nohit:
+  mov.l FX_CNT,r1
+  mov.l @r1,r0
+  mov #10,r2
+  cmp/hi r2,r0
+  bt fx_dec
+  mov #0,r0
+  mov.l r0,@r1
+  mov.l r0,@r11
+  bra fx_juggle
+  nop
+fx_dec:
+  sub r2,r0
+  mov.l r0,@r1
+; ---- medals: juggling with the lard beam, 10000 medals to the player, Fever makes every medal 10000 ----
+fx_juggle:
+; r10 = beam on (lard form and lard shot firing)
+  mov #0,r10
+  mov.l @r12,r0
+  mov.l FX_MECH,r1
+  tst r1,r0
+  bt fx_nob
+  mov.w FX_O20A,r0
+  mov.b @(r0,r12),r0
+  tst r0,r0
+  bt fx_nob
+  mov #1,r10
+fx_nob:
+; count medals on screen -> r9
+  mov.l FX_IPOOL,r8
+  mov #0,r9
+  mov.w FX_NSLOT,r7
+fx_cnt:
+  mov.l @r8,r0
+  tst r0,r0
+  bt fx_cn
+  mov.l @(4,r8),r0
+  cmp/eq #5,r0
+  bf fx_cn
+  add #1,r9
+fx_cn:
+  dt r7
+  bf/s fx_cnt
+  add #120,r8
+; walk the medals
+  mov.l FX_IPOOL,r8
+  mov #0,r11
+fx_m:
+  mov.l @r8,r0
+  tst r0,r0
+  bt fx_mn
+  mov.l @(4,r8),r0
+  cmp/eq #5,r0
+  bf fx_mn
+; Fever: every medal is 10000
+  mov.l FX_FEV,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bt fx_nf
+  mov.l @(8,r8),r0
+  cmp/eq #18,r0
+  bt fx_nf
+  mov #18,r0
+  mov.l r0,@(8,r8)
+  bsr medgfx
+  nop
+fx_nf:
+  mov.l @(8,r8),r0
+  cmp/eq #18,r0
+  bf fx_beam
+; 10000 medal: move it onto the player so the game collects it
+  mov.l @(28,r12),r0
+  mov.l r0,@(44,r8)
+  mov.l @(32,r12),r0
+  bra fx_mn
+  mov.l r0,@(48,r8)
+fx_beam:
+  tst r10,r10
+  bt fx_mn
+; in the beam: above the player and within 40 pixels sideways
+  mov.l @(44,r8),r0
+  mov.l @(28,r12),r1
+  cmp/gt r1,r0
+  bf fx_mn
+  mov.l @(48,r8),r0
+  mov.l @(32,r12),r1
+  sub r1,r0
+  mov.l FX_HALFW,r1
+  add r1,r0
+  add r1,r1
+  cmp/hs r1,r0
+  bt fx_mn
+; cooldown: 15 steps since this medal last split
+  mov r11,r0
+  add r0,r0
+  mov.l FX_CD,r1
+  add r0,r1
+  mov.w @r1,r2
+  mov r13,r3
+  sub r2,r3
+  extu.w r3,r3
+  mov #15,r2
+  cmp/hs r2,r3
+  bf fx_mn
+  mov.w r13,@r1
+; one step up
+  mov.l @(8,r8),r0
+  add #1,r0
+  mov.l r0,@(8,r8)
+  bsr medgfx
+  nop
+; split into two while there are fewer than 64 medals
+  mov #64,r0
+  cmp/hs r0,r9
+  bt fx_mn
+  bsr medclone
+  nop
+fx_mn:
+  add #1,r11
+  mov.w FX_NSLOT,r0
+  cmp/hs r0,r11
+  bf/s fx_m
+  add #120,r8
+fx_out:
+  lds.l @r15+,pr
+  mov.l @r15+,r13
+  mov.l @r15+,r12
+  mov.l @r15+,r11
+  mov.l @r15+,r10
+  mov.l @r15+,r9
+  rts
+  mov.l @r15+,r8
+
+; medgfx: r8 = medal item; refresh its graphics after a level change (game's item init 0C080B40 keeps the position)
+medgfx:
+  sts.l pr,@-r15
+  mov.l FX_IINIT,r0
+  jsr @r0
+  mov r8,r4
+  lds.l @r15+,pr
+  rts
+  nop
+
+; medclone: r8 = medal item, r11 = its slot, r13 = step. Copies it into a free slot and sends both flying.
+medclone:
+  sts.l pr,@-r15
+  mov.l FX_ALLOC,r0
+  jsr @r0
+  mov #1,r4
+  tst r0,r0
+  bt mcl_out
+  mov.l FX_NEWIX,r0
+  mov.l @r0,r5
+  mov #120,r0
+  mulu.w r0,r5
+  sts macl,r6
+  mov.l FX_IPOOL,r0
+  add r0,r6
+  mov r8,r1
+  mov r6,r2
+  mov #30,r3
+mcl_cp:
+  mov.l @r1+,r0
+  mov.l r0,@r2
+  dt r3
+  bf/s mcl_cp
+  add #4,r2
+  mov r5,r0
+  add r0,r0
+  mov.l FX_CD,r1
+  add r0,r1
+  mov.w r13,@r1
+  add #1,r9
+  mov.l FX_IVEL,r0
+  jsr @r0
+  mov r5,r4
+  mov.l FX_IVEL,r0
+  jsr @r0
+  mov r11,r4
+mcl_out:
+  lds.l @r15+,pr
+  rts
+  nop
+
+; spawn10k: r4/r5 = position (same axes as item +44/+48). New 10000 medal if there is room.
+spawn10k:
+  sts.l pr,@-r15
+  mov.l r4,@-r15
+  mov.l r5,@-r15
+  mov.l FX_ALLOC,r0
+  jsr @r0
+  mov #1,r4
+  mov.l @r15+,r5
+  mov.l @r15+,r4
+  tst r0,r0
+  bt s10_out
+  mov.l FX_NEWIX,r0
+  mov.l @r0,r6
+  mov.l r6,@-r15
+  mov #120,r0
+  mulu.w r0,r6
+  sts macl,r7
+  mov.l FX_IPOOL,r0
+  add r0,r7
+  mov.l FX_IFLAG,r0
+  mov.l r0,@r7
+  mov #5,r0
+  mov.l r0,@(4,r7)
+  mov #18,r0
+  mov.l r0,@(8,r7)
+  mov #0,r0
+  mov.l r0,@(12,r7)
+  mov.l r4,@(44,r7)
+  mov.l r5,@(48,r7)
+  mov.l r0,@(52,r7)
+  mov.l r0,@(56,r7)
+  mov.l r7,@-r15
+  mov.l FX_IINIT,r0
+  jsr @r0
+  mov r7,r4
+  mov.l @r15+,r7
+  mov.l @r15+,r4
+  mov.l FX_IVEL,r0
+  jsr @r0
+  nop
+s10_out:
+  lds.l @r15+,pr
+  rts
+  nop
+  .align 4
+FX_STEP: .long 0x0C4857C4
+FX_LAST: .long 0x0C04F83C
+FX_PST: .long 0x0C04F840
+FX_P1: .long 0x0C510B28
+FX_FEV: .long 0x0C04F838
+FX_CNT: .long 0x0C04F834
+FX_MAX: .long 10000
+FX_EDGE: .long 0x0C481F3C
+FX_P1IN: .long 0x0C481DF8, 0x0C481E38, 0x0C481E78, 0x0C481EFC, 0x0C481F3C, 0x0C481F7C
+FX_BPOOL: .long 0x0C4C371C
+FX_BCNT: .long 0x0C5108FC
+FX_MECH: .long 0x00002000
+FX_IPOOL: .long 0x0C52B648
+FX_HALFW: .long 0x00280000
+FX_CD: .long 0x0C04FA00
+FX_IINIT: .long 0x0C080B40
+FX_ALLOC: .long 0x0C07F6A0
+FX_NEWIX: .long 0x0C4C24EC
+FX_IVEL: .long 0x0C081330
+FX_IFLAG: .long 0xC0800004
+FX_O20A: .word 0x020A
+FX_NSLOT: .word 200
+  .align 4
 
 ; ---------- timer: find timed boss/midboss, draw seconds remaining ----------
 timer:
