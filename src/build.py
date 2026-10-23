@@ -1022,7 +1022,7 @@ arrfx:
   bt fx_ne
   mov.l FX_SWIN,r1
   mov.l @r1,r0
-  mov #50,r1
+  mov #110,r1
   cmp/hs r1,r0
   bt fx_ne
   mov.l FX_EDGE,r1
@@ -1123,9 +1123,9 @@ fx_rsx:
   mov.l FX_LARD,r0
   mov #104,r1
   mov.w r1,@(r0,r12)
-; bullets on screen become 10000 medals, then no enemy bullets for 2 seconds (61 steps at Fever's 50%)
+; bullets on screen become 10000 medals, then no enemy bullets for 4 seconds (121 steps at Fever's 50%)
   mov.l FX_SWIN,r1
-  mov #61,r0
+  mov #121,r0
   bra fx_juggle
   mov.l r0,@r1
 ; ---- during Fever: count down 10 per step; a hit ends it ----
@@ -1167,6 +1167,7 @@ fx_fevend:
   mov.l r0,@r1
   mov.l FX_FADE,r1
   mov #120,r0
+  add r0,r0
   mov.l r0,@r1
   mov.l FX_GRACE,r1
   mov #90,r0
@@ -1570,7 +1571,7 @@ FX_NSLOT: .word 200
 fxwin:
   sts.l pr,@-r15
 ; ---- Fever start window: first step every enemy bullet becomes a 10000 medal pushed upward, then for
-; 2 seconds any new bullet is removed as soon as it appears (r10 = 1 on the first step) ----
+; 4 seconds any new bullet is removed as soon as it appears (r10 = 1 on the first step) ----
   mov.l W_SWIN,r1
   mov.l @r1,r0
   tst r0,r0
@@ -1578,7 +1579,7 @@ fxwin:
   add #-1,r0
   mov.l r0,@r1
   mov #0,r10
-  cmp/eq #60,r0
+  cmp/eq #120,r0
   movt r10
   mov.l W_BPOOL,r8
   mov.w W_NSLOT,r9
@@ -1601,7 +1602,7 @@ fx_bn:
   bsr p2pass
   nop
 fx_nosw:
-; ---- Fever end window (120 steps = 2 seconds): the bullets on screen at the first step stop, open into a
+; ---- Fever end window (240 steps = 4 seconds): the bullets on screen at the first step stop, open into a
 ; ring and fade over 8 steps; bullets fired later are removed as soon as they appear (r10 = 1 on the first
 ; step). Per-bullet step count in the bullet's +60 (unused by the game's bullets) ----
   mov.l W_FADE,r1
@@ -1611,7 +1612,8 @@ fx_nosw:
   add #-1,r0
   mov.l r0,@r1
   mov #0,r10
-  cmp/eq #119,r0
+  mov.w W_FIRST,r2
+  cmp/eq r2,r0
   movt r10
   mov.l W_BPOOL,r4
   mov.w W_NSLOT,r5
@@ -1672,6 +1674,7 @@ W_BCNT: .long 0x0C5108FC
 W_FADE: .long 0x0C04F878
 W_FCOL: .long 0x02040000
 W_NSLOT: .word 1536
+W_FIRST: .word 239
   .align 4
 
 ; p2pass: the game's second enemy bullet list (0C4EC6F8, 144 bytes each: the green/blue capsule chains).
