@@ -24,6 +24,7 @@ I did all the testing and planning.
   - The arrow starts on ARCADE every time.
   - Harahara and Manpuku are unlocked, so the codes aren't needed.
 - **ARRANGE mode.** Starts as a copy of V1.01+ (all of the changes below), with "ARRANGE" shown under the hi-score. New Arrange features will be added on top.
+  - One player only: 2P can't join, the 2P prompts are hidden, "2P" reads FEVER and the 2P score shows the FEVER counter.
 - **V1.01+ mode.** Arcade with these changes: 
   - Pigs fill the lard meter twice as fast, and the lard shot lasts twice as long.
   - Three loops, each one following the last whether or not you died or bombed. Loop 3 plays with Manpuku rules.
