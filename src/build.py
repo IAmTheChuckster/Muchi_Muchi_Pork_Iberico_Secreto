@@ -103,8 +103,8 @@ def patch_sites(ram):
         (0x0C067AA8, 0x0C0E09A4, 'warntable'),   # warning screen: 12-line text table -> CAVE OWNS!!!
         (0x0C067AB4, 0x0C0DF658, 'datestr'),     # warning screen: date string -> the whole bottom line
         (0x0C0679D4, 0xD836E605, '0xD836E602'),  #   bottom line starts at column 2 (was 5): 26 chars centred in 30
-        (0x0C067AC4, 0x0C0E0B24, 'verstr'),      # warning screen: MASTER VER. -> ROPPAKU
-        (0x0C0679D4, 0xD836E605, '0xD836E604'),  #   date starts at text row 4 (was 5), so the 23-character line is centred
+        (0x0C067AC4, 0x0C0E0B24, 'verstr'),      # warning screen: MASTER VER. -> empty (the whole line is in datestr)
+        (0x0C0679D4, 0xD836E605, '0xD836E604'),  #   (old entry, never applies: the entry above already changed this long)
         (0x0C067A20, 0xD428E610, '0xD428E60F'),
         (0x0C06D038, 0x0C0E0FA8, 'nfsstr'),      # title screen: SALE BY AMI -> NOT FOR SALE (same row 9, centred)
         (0x0C0785A8, 0x014C6013, '0x014CD373'),  # lard: button check when not firing -> mov.l @(0C078778),r3
