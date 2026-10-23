@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Muchi Muchi Pork! Smoked Bacon (Cave CV1000) - patch build 57
+Muchi Muchi Pork! Iberico Secreto (Cave CV1000) - patch build 57
 
 Usage:
-    python3 mmpork_patch.py mmpork.zip              -> writes bacon_u4 next to the zip
-    python3 mmpork_patch.py mmpork.zip --zip        -> also writes mmporkbcn.zip (the set with u4 replaced by bacon_u4)
-    python3 mmpork_patch.py mmpork.zip --mra        -> also writes "Muchi Muchi Pork! Smoked Bacon.mra" (MiSTer)
-    python3 mmpork_patch.py mmpork.zip -o OUT       -> writes the patched bacon_u4 to OUT
+    python3 mmpork_patch.py mmpork.zip              -> writes iberico_u4 next to the zip
+    python3 mmpork_patch.py mmpork.zip --zip        -> also writes mmporkibc.zip (the set with u4 replaced by iberico_u4)
+    python3 mmpork_patch.py mmpork.zip --mra        -> also writes "Muchi Muchi Pork! Iberico Secreto.mra" (MiSTer)
+    python3 mmpork_patch.py mmpork.zip -o OUT       -> writes the patched iberico_u4 to OUT
     python3 mmpork_patch.py u4                      -> a loose original u4 works too (no --zip)
 
 The original u4 must have CRC32 d06cfa42; the result is checked to be a662f829.
@@ -17,9 +17,9 @@ import argparse, base64, os, sys, zipfile, zlib
 ORIG_CRC = 0xD06CFA42
 PATCHED_CRC = 0xA662F829
 U4_SIZE = 0x200000
-OUT_NAME = "bacon_u4"
-SET_NAME = "mmporkbcn.zip"
-MRA_NAME = "Muchi Muchi Pork! Smoked Bacon.mra"
+OUT_NAME = "iberico_u4"
+SET_NAME = "mmporkibc.zip"
+MRA_NAME = "Muchi Muchi Pork! Iberico Secreto.mra"
 
 # Patch blocks: (offset in the u4 file as stored in the MAME set, bytes)
 PATCHES = [
@@ -143,9 +143,9 @@ PATCHES = [
 ]
 
 
-# MiSTer MRA (the bacon_u4 CRC is filled in from PATCHED_CRC when written)
+# MiSTer MRA (the iberico_u4 CRC is filled in from PATCHED_CRC when written)
 MRA_TEMPLATE = """<!--
-  ikacore_CV1k MRA - Muchi Muchi Pork! (Japan, 2007/ 4/17 MASTER VER.).
+  ikacore_CV1k MRA - Muchi Muchi Pork! Iberico Secreto (2026/10/24 IBERICO).
   Converted from the community MRA (same set, zip names, CRCs and
   <about>) to the DDR3-direct delivery format, 2026-09-17.
 
@@ -174,18 +174,18 @@ MRA_TEMPLATE = """<!--
 -->
 <misterromdescription>
     <about author="ika-musume" source="https://github.com/ika-musume/ikacore_CV1k"/>
-    <name>Muchi Muchi Pork! (Japan, 2007/ 4/17 MASTER VER.)</name>
-    <setname>mmporkbcn</setname>
+    <name>Muchi Muchi Pork! Iberico Secreto (2026/10/24 IBERICO)</name>
+    <setname>mmporkibc</setname>
     <year>2007</year>
     <manufacturer>Cave</manufacturer>
     <category>Shooter</category>
     <rbf>ikacore_CV1k</rbf>
 
-    <rom index="1" address="0x34400000" zip="mmporkbcn.zip" md5="none">
+    <rom index="1" address="0x34400000" zip="mmporkibc.zip" md5="none">
         <part name="u2" crc="1ee961b8"/>
     </rom>
 
-    <rom index="2" address="0x3C800000" zip="mmporkbcn.zip" md5="none">
+    <rom index="2" address="0x3C800000" zip="mmporkibc.zip" md5="none">
         <part name="u23" crc="4a4b36df"/>
         <part repeat="0x400000">00</part>
         <part name="u24" crc="ce83d07b"/>
@@ -194,9 +194,9 @@ MRA_TEMPLATE = """<!--
 
     <nvram index="3" size="135680"/>
 
-    <rom index="0" zip="mmporkbcn.zip" md5="none">
-        <part name="bacon_u4" crc="a662f829"/>
-        <part name="bacon_u4" crc="a662f829"/>
+    <rom index="0" zip="mmporkibc.zip" md5="none">
+        <part name="iberico_u4" crc="a662f829"/>
+        <part name="iberico_u4" crc="a662f829"/>
     </rom>
 
     <buttons names="B1,B2,B3,B4,Start,Coin,Test,Service,Save State" default="A,B,X,Y,Start,R,L,Select"/>
@@ -231,14 +231,14 @@ def apply_patch(data):
 
 def mra_text():
     import re
-    return re.sub(r'(<part name="bacon_u4" crc=")[0-9a-fA-F]{8}', lambda m: m.group(1) + "%08x" % PATCHED_CRC, MRA_TEMPLATE)
+    return re.sub(r'(<part name="iberico_u4" crc=")[0-9a-fA-F]{8}', lambda m: m.group(1) + "%08x" % PATCHED_CRC, MRA_TEMPLATE)
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into bacon_u4 (Smoked Bacon, build 57)")
+    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into iberico_u4 (Iberico Secreto, build 57)")
     ap.add_argument("input", help="mmpork.zip or a loose original u4 file")
-    ap.add_argument("-o", "--output", help="where to write bacon_u4")
-    ap.add_argument("--zip", action="store_true", help="also write mmporkbcn.zip (input must be a zip)")
+    ap.add_argument("-o", "--output", help="where to write iberico_u4")
+    ap.add_argument("--zip", action="store_true", help="also write mmporkibc.zip (input must be a zip)")
     ap.add_argument("--mra", action="store_true", help="also write the MiSTer .mra")
     a = ap.parse_args()
 
