@@ -15,6 +15,6 @@ emu.register_frame_done(function()
   local fev=sp:read_u32(0x0c04f838)
   local top=sp:read_u8(B)
   if fev~=lastfev or top~=lastst then print(frame,"fev",fev,"top",string.format("%02x",top),"cnt",sp:read_u32(0x0c04f834),"chain",sp:read_u32(0x0c53f4a4),"grace",sp:read_u32(0x0c04f86c),"mode",sp:read_u8(0x0c516fdc)); lastfev=fev; lastst=top end
-  if frame%30==0 then local ds=st-s0; s0=st; if fev==1 or frame%300==0 then print(frame,"steps/30f",ds,"bullets",nb(),"fev",fev) end end
+  if frame%30==0 then local ds=st-s0; s0=st; if fev==1 or frame%300==0 then print(frame,"steps/30f",ds,"bullets",nb(),"fev",fev,"cur",sp:read_u32(0x0c04f880)) end end
   if frame==12100 then manager.machine:exit() end
 end)

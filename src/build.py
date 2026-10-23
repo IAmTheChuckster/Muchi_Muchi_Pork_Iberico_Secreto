@@ -771,7 +771,7 @@ fevspeed:
   tst r0,r0
   bt sp_norm
 ; Fever speed in tenths of a percent from the enemy bullets on screen (n, both bullet lists):
-; n <= 100: 1000 - 3n (100% .. 70%), 100 < n < 150: 700 - 4(n - 100) (70% .. 50%), n >= 150: 500
+; n <= 100: 1000 - 3n, at most 990 (99% .. 70%), 100 < n < 150: 700 - 4(n - 100) (70% .. 50%), n >= 150: 500
   mov.l r3,@-r15
   mov.l r5,@-r15
   mov.l SP_BPOOL,r1
@@ -813,6 +813,10 @@ sp_c2:
   add r3,r2
   mov.w SP_1000,r0
   sub r2,r0
+; never above 99%
+  mov.w SP_990,r2
+  cmp/gt r2,r0
+  bt sp_acc
   bra sp_acc
   mov r0,r2
 sp_hi:
@@ -829,6 +833,25 @@ sp_min:
 sp_acc:
   mov.l @r15+,r5
   mov.l @r15+,r3
+; ease toward the target: the speed moves at most 1% (10 tenths) per call
+  mov.l SP_CUR,r1
+  mov.l @r1,r0
+  mov r2,r4
+  cmp/hi r0,r4
+  bt sp_up
+  add #-10,r0
+  cmp/gt r4,r0
+  bt sp_st
+  bra sp_st
+  mov r4,r0
+sp_up:
+  add #10,r0
+  cmp/gt r4,r0
+  bf sp_st
+  mov r4,r0
+sp_st:
+  mov.l r0,@r1
+  mov r0,r2
 ; real frames since the last call (vblank count 0C002310), 1..3: the game drops to 30 Hz when busy,
 ; so the speed is measured against real time, not against game frames
   mov.l SP_VBL,r0
@@ -879,6 +902,10 @@ sp_cap:
   bra sp_go
   mov.l r2,@r7
 sp_norm:
+; outside Fever the eased speed waits at 99% for the next Fever
+  mov.l SP_CUR,r1
+  mov.w SP_990,r0
+  mov.l r0,@r1
   mov.l @r7,r0
   cmp/eq #-1,r0
   bt sp_skip
@@ -905,12 +932,14 @@ SP_VBL: .long 0x0C002310
 SP_LASTV: .long 0x0C04F870
 SP_BCNT: .long 0x0C5108FC
 SP_P2: .long 0x0C4EC6F8
+SP_CUR: .long 0x0C04F880
 SP_HLO: .long 0x0C0D0000
 SP_HHI: .long 0x0C0E0000
 SP_1000: .word 1000
 SP_700: .word 700
 SP_500: .word 500
 SP_150: .word 150
+SP_990: .word 990
 SP_N1: .word 1536
 SP_N2: .word 256
 SP_S2: .word 144
