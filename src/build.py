@@ -184,29 +184,17 @@ m_noup:
   mov #4,r3
 m_nodn:
   mov.l r3,@r1
-; ARRANGE (placeholder): while it is selected, hide the Start buttons from the game so nothing happens
-  mov r3,r0
-  cmp/eq #4,r0
-  bf m_noblk
-  mova BLK_LIST,r0
-  mov r0,r6
-  mov #12,r7
-  mov #127,r4
-m_blk:
-  mov.l @r6+,r2
-  mov.b @r2,r0
-  and r4,r0
-  mov.b r0,@r2
-  dt r7
-  bf m_blk
-m_noblk:
 ; V1.01 flag and drain-rate table pointers follow the selection
   mov #0,r2
   mov.l LM_DRAIN0,r6
   mov.l LM_MED0,r7
   mov r3,r0
   cmp/eq #3,r0
+  bt m_isv
+  cmp/eq #4,r0
   bf m_notv
+m_isv:
+; V1.01+ and ARRANGE (which starts as V1.01+)
   mov #1,r2
   mov.l LM_DRAIN2,r6
   mov.l LM_MED2,r7
@@ -218,6 +206,12 @@ m_notv:
   mov.l r2,@r0
   mov #0,r2
   mov.l r2,@(4,r0)
+; ARRANGE flag (0C04F830) = selection 4
+  mov r3,r0
+  cmp/eq #4,r0
+  movt r2
+  mov.l LM_ARR,r0
+  mov.l r2,@r0
   mov.l LM_DLIT1,r0
   mov.l r6,@r0
   mov.l LM_DLIT2,r0
@@ -261,10 +255,10 @@ LM_DLIT1: .long 0x0C078648
 LM_DLIT2: .long 0x0C078818
 drain2: .long 0x0A0E0C00, 0x10160707, 0x50000000, 0x01020102
 LM_MLIT: .long 0x0C080B30
+LM_ARR: .long 0x0C04F830
 LM_MED0: .long 0x0C0E3110
 LM_MED2: .long nomedal
 nomedal: .long 0x00000000, 0x00000000
-BLK_LIST: .long 0x0C481DF8, 0x0C481DF9, 0x0C481E38, 0x0C481E39, 0x0C481E78, 0x0C481E79, 0x0C481EFC, 0x0C481EFD, 0x0C481F3C, 0x0C481F3D, 0x0C481F7C, 0x0C481F7D
 
 ; ---------- menudraw: replaces the title's mode-name draw (0C077BD0); draws the 3-line menu with an arrow ----------
 menudraw:
@@ -569,6 +563,12 @@ modelabel:
   add r1,r2
   mova ML_TXT,r0
   mov r0,r3
+  mov.l ML_ARR,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bt ml_v101
+  add #8,r3
+ml_v101:
   mov.l ML_COLOR,r7
   mov #8,r1
 ml_ch:
@@ -596,7 +596,8 @@ ML_CELLS: .long 0x0C483A50
 ML_COLOR: .long 0x60308000
 ML_DIRTY: .long 0x0C4EAC98
 ML_ORIG: .long 0x0C077BD0
-ML_TXT: .long 0x56312E30, 0x312B2020
+ML_ARR: .long 0x0C04F830
+ML_TXT: .long 0x56312E30, 0x312B2020, 0x41525241, 0x4E474520
 
 ; ---------- wrapper: replaces calls to the text-layer redraw ----------
 wrapper:

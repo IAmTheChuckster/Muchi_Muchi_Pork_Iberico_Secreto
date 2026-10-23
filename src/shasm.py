@@ -166,6 +166,7 @@ class Asm:
         one = {'dt': 0x4010, 'shlr': 0x4001, 'shlr2': 0x4009, 'shlr16': 0x4029, 'shll2': 0x4008,
                'cmp/pz': 0x4011}
         if op in one: return one[op] | (n(0) << 8)
+        if op == 'movt': return 0x0029 | (n(0) << 8)
         if op == 'bt': return 0x8900 | br(L(args[0]), 8)
         if op == 'bf': return 0x8B00 | br(L(args[0]), 8)
         if op == 'bt/s': return 0x8D00 | br(L(args[0]), 8)
