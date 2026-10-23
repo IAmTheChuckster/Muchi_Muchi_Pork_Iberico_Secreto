@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Muchi Muchi Pork! Smoked Bacon (Cave CV1000) - patch build 26
+Muchi Muchi Pork! Smoked Bacon (Cave CV1000) - patch build 27
 
 Usage:
     python3 mmpork_patch.py mmpork.zip              -> writes bacon_u4 next to the zip
@@ -9,13 +9,13 @@ Usage:
     python3 mmpork_patch.py mmpork.zip -o OUT       -> writes the patched bacon_u4 to OUT
     python3 mmpork_patch.py u4                      -> a loose original u4 works too (no --zip)
 
-The original u4 must have CRC32 d06cfa42; the result is checked to be 0d46e765.
+The original u4 must have CRC32 d06cfa42; the result is checked to be b7ec54a8.
 Only the Python standard library is used.
 """
 import argparse, base64, os, sys, zipfile, zlib
 
 ORIG_CRC = 0xD06CFA42
-PATCHED_CRC = 0x0D46E765
+PATCHED_CRC = 0xB7EC54A8
 U4_SIZE = 0x200000
 OUT_NAME = "bacon_u4"
 SET_NAME = "mmporkbcn.zip"
@@ -49,7 +49,7 @@ PATCHES = [
     "YHsgAiIQQeOPBHIK0gHgAiICEgQSCwAGEgkABAww+B+AKAYfgDwFBAw0+EgM7ExIDHBMSAx8S04M"
     "uK0wYACAgIAAgGCAICBIDPkdSAw5HkgMeR5IDP0eSAw9H0gMfR+aOwDK9QUA4ZgAgJYPAEBCAQCg"
     "hgAAECcAAOgDAABkAAAACgAAAAEARUZFVgBSAAAM0w3QAmAIIBGJDNAAYAggDYsL0RJgFZIsMP/i"
-    "ZORCMAKLSDD7rwFyAiELACIjAOALAAIjSAxooQQMOPhRDBwJBAxQ+FoACQAP0AJgCCAYiQ7QAmAI"
+    "ZORCMAKLSDD7rwFyAiELACIjAOALAAIjSAxooQQMOPhRDBwJBAxQ+EsACQAP0AJgCCAYiQ7QAmAI"
     "IBSLeOAOJRoBDdAMMRJREuAGMQuJCEEMxwwxEmEH0iJgHDAH0RYwAIsTYAIiBtArQAkABAww+AQM"
     "OPgEDDT4UgxItgAAECcJDAAAAAAKAAAAFAAAAB4AAAAoAAAAMgAAADwAAABGAAAAUAAAAFoAAABk"
     "AAAAyAAAACwBAACQAQAA9AEAAFgCAAC8AgAAIAMAAIQDAADoA4Yvli+mL7Yvxi/WLyJPltACbZnR"
@@ -161,8 +161,8 @@ MRA_TEMPLATE = """<!--
     <nvram index="3" size="135680"/>
 
     <rom index="0" zip="mmporkbcn.zip" md5="none">
-        <part name="bacon_u4" crc="0d46e765"/>
-        <part name="bacon_u4" crc="0d46e765"/>
+        <part name="bacon_u4" crc="b7ec54a8"/>
+        <part name="bacon_u4" crc="b7ec54a8"/>
     </rom>
 
     <buttons names="B1,B2,B3,B4,Start,Coin,Test,Service,Save State" default="A,B,X,Y,Start,R,L,Select"/>
@@ -201,7 +201,7 @@ def mra_text():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into bacon_u4 (Smoked Bacon, build 26)")
+    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into bacon_u4 (Smoked Bacon, build 27)")
     ap.add_argument("input", help="mmpork.zip or a loose original u4 file")
     ap.add_argument("-o", "--output", help="where to write bacon_u4")
     ap.add_argument("--zip", action="store_true", help="also write mmporkbcn.zip (input must be a zip)")
