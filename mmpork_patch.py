@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Muchi Muchi Pork! Iberico Secreto (Cave CV1000) - patch build 58
+Muchi Muchi Pork! Iberico Secreto (Cave CV1000) - patch build 59
 
 Usage:
     python3 mmpork_patch.py mmpork.zip              -> writes iberico_u4 next to the zip
@@ -9,13 +9,13 @@ Usage:
     python3 mmpork_patch.py mmpork.zip -o OUT       -> writes the patched iberico_u4 to OUT
     python3 mmpork_patch.py u4                      -> a loose original u4 works too (no --zip)
 
-The original u4 must have CRC32 d06cfa42; the result is checked to be afa6ea1d.
+The original u4 must have CRC32 d06cfa42; the result is checked to be 3ca26133.
 Only the Python standard library is used.
 """
 import argparse, base64, os, sys, zipfile, zlib
 
 ORIG_CRC = 0xD06CFA42
-PATCHED_CRC = 0xAFA6EA1D
+PATCHED_CRC = 0x3CA26133
 U4_SIZE = 0x200000
 OUT_NAME = "iberico_u4"
 SET_NAME = "mmporkibc.zip"
@@ -51,7 +51,7 @@ PATCHES = [
     "rwF0ItII5QjmYzQCixfgB6AJABVEAokg4AKgCQBDYA9weyACIgRy+HQQRe2LEtACY0KQAOYCMwSL"
     "F9ACYBDIAIsB5hPSFccDZRjXDuFUYAxgeyBoJgCLAOACIhBB9o8EcgzSAeACIgjSAeALAAIiCQAE"
     "DDD4BAzwyAQMNPhIDOxMSAxwTEgM1EtODLCtSAy4SkgMQEpODKitAAwQI0VGRVYgUkVSREEgWSAg"
-    "AACAgAAQQCAAgCCAACAQJ+IEMGAAgGCAACCAgACAYIAgIAAAECcAAOgDAABkAAAACgAAAAEARUZF"
+    "AACAgAAQQCAAgICAAAAQJ+IEMGAAgGCAACCAgACAYIAgIAAAECcAAOgDAABkAAAACgAAAAEARUZF"
     "ViBSAABN0AJgCCALiUrQAmAIIAmLVNACYAKIA4tT0AJgCCABi3egCQA2L1YvR9GolQDjEmAIIACJ"
     "AXMQRfmPXHFG0Z+VEmAIIAeJEVBI0iIwA4tI0iIwAIkBc5SQDDEQRfCLZOAGMwmJM2IsMjwyg5Ao"
     "MIWSJzAKiQmgA2J/kAIzBImccwhDeJIBoDgydpL2ZfZjNNESYAggA4sn0RJgCCACi2uSLtEiIS3R"
@@ -195,8 +195,8 @@ MRA_TEMPLATE = """<!--
     <nvram index="3" size="135680"/>
 
     <rom index="0" zip="mmporkibc.zip" md5="none">
-        <part name="iberico_u4" crc="afa6ea1d"/>
-        <part name="iberico_u4" crc="afa6ea1d"/>
+        <part name="iberico_u4" crc="3ca26133"/>
+        <part name="iberico_u4" crc="3ca26133"/>
     </rom>
 
     <buttons names="B1,B2,B3,B4,Start,Coin,Test,Service,Save State" default="A,B,X,Y,Start,R,L,Select"/>
@@ -235,7 +235,7 @@ def mra_text():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into iberico_u4 (Iberico Secreto, build 58)")
+    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into iberico_u4 (Iberico Secreto, build 59)")
     ap.add_argument("input", help="mmpork.zip or a loose original u4 file")
     ap.add_argument("-o", "--output", help="where to write iberico_u4")
     ap.add_argument("--zip", action="store_true", help="also write mmporkibc.zip (input must be a zip)")

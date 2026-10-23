@@ -16,7 +16,7 @@ python3 build.py mmpork.zip mmpork_patched.zip
 python3 update_patchers.py mmpork.zip mmpork_patched.zip 29
 ```
 
-`mmpork.zip` must hold the original `u4` (CRC `d06cfa42`). Build 58 gives `u4` CRC `afa6ea1d`; the patchers save it as `iberico_u4`.
+`mmpork.zip` must hold the original `u4` (CRC `d06cfa42`). Build 59 gives `u4` CRC `3ca26133`; the patchers save it as `iberico_u4`.
 
 ## Run a MAME test
 
