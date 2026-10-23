@@ -19,7 +19,7 @@ I did all the testing and planning.
   - Harahara and Manpuku are unlocked, so the codes aren't needed.
 - **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with "ARRANGE+" shown under the hi-score and a FEVER bar under the 1P lives icon: blue while it fills (and while it drains in Fever), yellow when the counter is full, with FEVER READY flashing in yellow below it.
   - One loop: after the last boss the ending plays and the game is over.
-  - An extra life every 20,000,000 points (instead of the normal score extends).
+  - Score extends follow your DIP switch settings.
   - Two players can play. Fever, juggling and the FEVER counter follow player 1.
   - **Medal juggling.** Hitting a medal with the lard shot splits it into two medals one value step higher (100 → 200 → … → 10000), which pop up toward the top of the screen and fall back down, one drifting to each side. Every value change pops, even when there is no room to split. A medal splits once as it enters the beam; it splits again only after leaving the beam and coming back (or when you fire a new lard beam). Up to 64 medals on screen.
   - **FEVER counter.** Every medal collected adds 0.3% of its value (100 adds 0.3, 10000 adds 30), up to 10000. It goes back to 0 when a new game starts (a continue keeps it). While the counter is full, every medal is a 10000 medal and enemies fire revenge bullets when destroyed (as in Manpuku).
@@ -37,7 +37,7 @@ I did all the testing and planning.
 - **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/10/24 IBERICO SECRETO` (centred).
 - **Title screen.** `SALE BY AMI` is replaced with `NOT FOR SALE`.
 ## Patching the game
-You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24. Both patchers check the input and give identical files: `iberico_u4` (CRC `3ca26133`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
+You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24. Both patchers check the input and give identical files: `iberico_u4` (CRC `861939e8`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
 
 ### Web patcher
 1. Open the [web patcher](https://iamthechuckster.github.io/Muchi_Muchi_Pork_Iberico_Secreto/).
