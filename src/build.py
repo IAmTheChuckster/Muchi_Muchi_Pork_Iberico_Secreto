@@ -795,6 +795,40 @@ ah_bw:
   add #-8,r4
   dt r5
   bf ah_bc
+; column 34 rows 0-13 (under the bar): FEVER READY!!! in yellow while the counter is full, flashing
+; (16 frames on, 16 off, from the vblank count); blank otherwise
+  mov.l AH_CNT,r0
+  mov.l @r0,r3
+  mov.w AH_10K,r0
+  mov #0,r6
+  cmp/hs r0,r3
+  bf ah_rdy
+  mov.l AH_VBL,r0
+  mov.l @r0,r0
+  tst #16,r0
+  bf ah_rdy
+  mov #1,r6
+ah_rdy:
+  mov.l AH_RDY,r2
+  mova AH_RTXT,r0
+  mov r0,r5
+  mov.l AH_YCOL,r7
+  mov #14,r1
+ah_rl:
+  mov.b @r5+,r0
+  extu.b r0,r0
+  or r7,r0
+  tst r6,r6
+  bf ah_rw
+  mov #0,r0
+ah_rw:
+  mov.l r0,@r2
+  dt r1
+  bf/s ah_rl
+  add #4,r2
+  mov.l AH_DIRTY34,r2
+  mov #1,r0
+  mov.l r0,@r2
 ; redraw column 35
   mov.l AH_DIRTY,r2
   mov #1,r0
@@ -809,6 +843,10 @@ AH_C38: .long 0x0C484C70
 AH_C36F: .long 0x0C484BD4
 AH_DIRTY: .long 0x0C4EADB0
 AH_BAR: .long 0x0C484AB8
+AH_RDY: .long 0x0C484A40
+AH_DIRTY34: .long 0x0C4EADA8
+AH_VBL: .long 0x0C002310
+AH_RTXT: .long 0x46455645, 0x52205245, 0x41445921, 0x21210000
 AH_BLUE: .long 0x20408000
 AH_RED: .long 0x80202000
 AH_10K: .word 10000
