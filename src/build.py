@@ -119,7 +119,8 @@ def patch_sites(ram):
         (0x0C06F998, 0x8D6BEA00, '0x0009EA00'),  #   nop (delay slot); fevspeed decides skip or run
         (0x0C074598, 0x0C07DDF0, 'hithook'),     # ARRANGE+: player-hit call (tail jump) -> a hit in Fever ends Fever instead
         (0x0C0748FC, 0x0C07DDF0, 'hithook'),     #   second player-hit call
-        (0x0C06FC78, 0x00090009, 'fevspeed'),    #   literal in padding after the literal pool  #   second part starts at row 15 (was 16)
+        (0x0C06FC78, 0x00090009, 'fevspeed'),
+        (0x0C0D7528, 0x0C4EAC3C, '0x0C04F888'),  # revenge-bullet routine 0C0D74E0: its "mode == Manpuku" test reads our flag    #   literal in padding after the literal pool  #   second part starts at row 15 (was 16)
     ]
     if ram is not None:
         for a, old, _ in sites:
@@ -648,6 +649,27 @@ wrapper:
   mov #0,r0
   mov.l LW_SEL,r1
   mov.l r0,@r1
+; revenge bullets (enemies fire when destroyed): on in Manpuku as in the original, and during ARRANGE+ Fever
+  mov.l LW_MODE,r1
+  mov.l @r1,r0
+  cmp/eq #1,r0
+  bt lw_rv1
+  mov.l LW_ARR,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt lw_rv0
+  mov.l LW_FEV,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt lw_rv0
+lw_rv1:
+  bra lw_rvs
+  mov #1,r0
+lw_rv0:
+  mov #0,r0
+lw_rvs:
+  mov.l LW_RV,r1
+  mov.l r0,@r1
   sts.l pr,@-r15
   mov.l r4,@-r15
   mov.l r5,@-r15
@@ -672,6 +694,10 @@ LW_TIMER: .long timer
 LW_AHUD: .long ahud
 LW_SEL: .long 0x0C04F824
 LW_ORIG: .long 0x0C061070
+LW_MODE: .long 0x0C4EAC3C
+LW_ARR: .long 0x0C04F830
+LW_FEV: .long 0x0C04F838
+LW_RV: .long 0x0C04F888
 
 ; ---------- ARRANGE HUD (1-player mode): "2p" becomes FEVER, the 2P score shows the counter (0C04F834), no 2P join ----------
 ahud:
@@ -1328,8 +1354,6 @@ fx_dec:
 fx_juggle:
   bsr fxwin
   nop
-  bsr dblb
-  nop
 ; r10 = beam on (lard form and lard shot firing)
   mov #0,r10
   mov.l @r12,r0
@@ -1427,9 +1451,8 @@ fx_beam:
   mov.l r0,@(8,r8)
   bsr medgfx
   nop
-; split into two while there are fewer than 128 medals
+; split into two while there are fewer than 64 medals
   mov #64,r0
-  add r0,r0
   cmp/hs r0,r9
   bt fx_solo
   bsr medclone
