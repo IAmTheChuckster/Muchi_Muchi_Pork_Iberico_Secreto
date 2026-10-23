@@ -37,6 +37,27 @@ I did all the testing and planning.
 - **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/10/24 IBERICO SECRETO` (centred).
 - **Title screen.** `SALE BY AMI` is replaced with `NOT FOR SALE`.
 ## Patching the game
+You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24. Both patchers check the input and give identical files: `iberico_u4` (CRC `3ca26133`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
+
+### Web patcher
+1. Open the [web patcher](https://iamthechuckster.github.io/Muchi_Muchi_Pork_Iberico_Secreto/).
+2. Load your `mmpork.zip` (or the loose u4 file). Everything runs in your browser; nothing is uploaded.
+3. Check that the files are shown as OK.
+4. Download what you need: **mmporkibc.zip** (complete romset), **Muchi Muchi Pork! Iberico Secreto.mra**, **iberico_u4.zip** or **iberico_u4**.
+
+### Python script
+Needs Python 3 only (no extra packages). Download `mmpork_patch.py` from this repository, then run:
+```
+python3 mmpork_patch.py mmpork.zip --zip --mra
+```
+- `--zip` also writes `mmporkibc.zip` (the input must be the zip).
+- `--mra` also writes `Muchi Muchi Pork! Iberico Secreto.mra`.
+- `-o FILE` sets where `iberico_u4` is written.
+- A loose u4 can be given instead of the zip: `python3 mmpork_patch.py u4`.
+
+### Using the patched files
+- **MAME:** put `mmporkibc.zip` in your roms folder next to `mmpork.zip`, or replace u4 in a copy of the mmpork set with `iberico_u4` (renamed to u4); MAME will report a checksum mismatch, which is expected.
+- **MiSTer (CV1k core):** copy `mmporkibc.zip` to your `games/mame` folder and the `.mra` to `_Arcade`.
 
 ## Testing
 This patch was tested with MAME 0.289 and [CV1k core for the MiSTer FPGA by Raki](https://www.patreon.com/c/ikamusume/posts)<br>
