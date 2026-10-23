@@ -924,6 +924,10 @@ fx_rsx:
   mov.b @r12,r0
   mov.l FX_PST,r1
   mov.b r0,@r1
+; lard meter full
+  mov.l FX_LARD,r0
+  mov #104,r1
+  mov.w r1,@(r0,r12)
 ; hide this C press from the game (no bomb)
   mova FX_P1IN,r0
   mov r0,r6
@@ -1199,6 +1203,7 @@ s10_out:
   .align 4
 FX_STEP: .long 0x0C4857C4
 FX_RS: .long 0x0C04F844
+FX_LARD: .long 0x0000020E
 FX_O214L: .long 0x00000214
 FX_LAST: .long 0x0C04F83C
 FX_PST: .long 0x0C04F840
