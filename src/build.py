@@ -1287,19 +1287,6 @@ fx_play:
   mov.l r0,@r1
 fx_g0:
   mov.l FX_P1,r12
-; extends every 20,000,000: the game's next-extend score (+0x22C) is kept at the next multiple above the score
-  mov.l FX_O228,r0
-  mov.l @(r0,r12),r1
-  mov.l FX_EXT,r2
-  mov r2,r3
-fx_ex:
-  cmp/hi r1,r3
-  bt fx_exd
-  bra fx_ex
-  add r2,r3
-fx_exd:
-  add #4,r0
-  mov.l r3,@(r0,r12)
 ; ---- extra bomb on respawn: keep the bombs held at the moment of the hit, give them back +1 (max 4) ----
   mov.b @r12,r0
   extu.b r0,r0
