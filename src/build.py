@@ -1095,9 +1095,9 @@ fx_rsx:
   mov.l FX_LARD,r0
   mov #104,r1
   mov.w r1,@(r0,r12)
-; bullets on screen become 10000 medals, then no enemy bullets for 1 second (31 steps at Fever's 50%)
+; bullets on screen become 10000 medals, then no enemy bullets for 2 seconds (61 steps at Fever's 50%)
   mov.l FX_SWIN,r1
-  mov #31,r0
+  mov #61,r0
   bra fx_juggle
   mov.l r0,@r1
 ; ---- during Fever: count down 10 per step; a hit ends it ----
@@ -1145,7 +1145,7 @@ fx_fclr:
   bf/s fx_fclr
   add #4,r1
   mov.l FX_FADE,r1
-  mov #60,r0
+  mov #120,r0
   mov.l r0,@r1
   mov.l FX_GRACE,r1
   mov #90,r0
@@ -1550,7 +1550,7 @@ FX_NSLOT: .word 200
 fxwin:
   sts.l pr,@-r15
 ; ---- Fever start window: first step every enemy bullet becomes a 10000 medal pushed upward, then for
-; 1 second any new bullet is removed as soon as it appears (r10 = 1 on the first step) ----
+; 2 seconds any new bullet is removed as soon as it appears (r10 = 1 on the first step) ----
   mov.l W_SWIN,r1
   mov.l @r1,r0
   tst r0,r0
@@ -1558,7 +1558,7 @@ fxwin:
   add #-1,r0
   mov.l r0,@r1
   mov #0,r10
-  cmp/eq #30,r0
+  cmp/eq #60,r0
   movt r10
   mov.l W_BPOOL,r8
   mov.l W_BCNT,r0
@@ -1580,7 +1580,7 @@ fx_bn:
   bf/s fx_bl
   add #92,r8
 fx_nosw:
-; ---- Fever end window (60 steps = 1 second): the bullets on screen at the first step stop, open into a
+; ---- Fever end window (120 steps = 2 seconds): the bullets on screen at the first step stop, open into a
 ; ring and fade over 8 steps; bullets fired later are removed as soon as they appear (r10 = 1 on the first
 ; step). Per-bullet step count in bytes at 0C04FC00 ----
   mov.l W_FADE,r1
@@ -1590,7 +1590,7 @@ fx_nosw:
   add #-1,r0
   mov.l r0,@r1
   mov #0,r10
-  cmp/eq #59,r0
+  cmp/eq #119,r0
   movt r10
   mov.l W_BPOOL,r4
   mov.l W_FBUF,r7
