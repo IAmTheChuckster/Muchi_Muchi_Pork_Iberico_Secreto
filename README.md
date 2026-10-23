@@ -23,7 +23,7 @@ I did all the testing and planning.
   - Move the arrow with the joystick and press Start.
   - The arrow starts on ARCADE every time.
   - Harahara and Manpuku are unlocked, so the codes aren't needed.
-  - ARRANGE is a placeholder for now. Pressing Start on it does nothing.
+- **ARRANGE mode.** Starts as a copy of V1.01+ (all of the changes below), with "ARRANGE" shown under the hi-score. New Arrange features will be added on top.
 - **V1.01+ mode.** Arcade with these changes: 
   - Pigs fill the lard meter twice as fast, and the lard shot lasts twice as long.
   - Three loops, each one following the last whether or not you died or bombed. Loop 3 plays with Manpuku rules.
