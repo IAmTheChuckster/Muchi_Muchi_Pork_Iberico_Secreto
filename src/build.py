@@ -734,7 +734,7 @@ LW_P1: .long 0x0C510B28
 LW_CNT: .long 0x0C04F834
 LW_MAX: .long 10000
 
-; ---------- ARRANGE HUD: the FEVER counter (0C04F834) bottom left above the bomb meter; 2P works as normal ----------
+; ---------- ARRANGE HUD: the FEVER counter (0C04F834) under the hi-score in yellow; 2P works as normal ----------
 ahud:
   mov.l AH_ARR,r0
   mov.l @r0,r0
@@ -749,10 +749,16 @@ ah_on:
   nop
   lds.l @r15+,pr
 ; full 2P: the 2P label, score, join prompts and inputs are left alone.
-; column 3 rows 0-4 (bottom left, just above the 1P bomb meter): the counter, up to 5 digits left-aligned,
-; in the label colour
+; column 37 rows 11-18 (where the mode label goes, under the hi-score): 3 blanks and the counter,
+; 5 digits right-aligned, in the hi-score's yellow
   mov.l AH_C36F,r2
-  mov.l AH_LCOL,r7
+  mov.l AH_YCOL,r7
+  mov #32,r0
+  or r7,r0
+  mov.l r0,@r2
+  mov.l r0,@(4,r2)
+  mov.l r0,@(8,r2)
+  add #12,r2
   mov.l AH_CNT,r0
   mov.l @r0,r3
   mova AH_POW,r0
@@ -777,11 +783,13 @@ ah_dig:
   bf ah_put
   mov r1,r0
   cmp/eq #1,r0
-  bt ah_put
-; leading zero: skipped (left-aligned)
-  dt r1
-  bf ah_d
-  bra ah_pad
+  bt ah_zero
+  mov #32,r4
+  bra ah_put
+  nop
+ah_zero:
+  mov #48,r4
+  bra ah_put
   nop
 ah_nz:
   mov #1,r6
@@ -789,22 +797,10 @@ ah_put:
   mov r4,r0
   or r7,r0
   mov.l r0,@r2
-  add #4,r2
   dt r1
-  bf ah_d
-; blank the rest of the 5 cells
-ah_pad:
-  mov.l AH_PEND,r3
-  mov #32,r0
-  or r7,r0
-ah_pb:
-  cmp/hs r3,r2
-  bt ah_pd
-  mov.l r0,@r2
-  bra ah_pb
+  bf/s ah_d
   add #4,r2
-ah_pd:
-; redraw column 3
+; redraw column 37
   mov.l AH_DIRTY,r2
   mov #1,r0
   rts
@@ -815,10 +811,10 @@ AH_FX: .long arrfx
 AH_CNT: .long 0x0C04F834
 AH_C39: .long 0x0C484CEC
 AH_C38: .long 0x0C484C70
-AH_C36F: .long 0x0C483BB8
-AH_PEND: .long 0x0C483BCC
-AH_DIRTY: .long 0x0C4EACB0
+AH_C36F: .long 0x0C484BD4
+AH_DIRTY: .long 0x0C4EADC0
 AH_LCOL: .long 0x60308000
+AH_YCOL: .long 0x80602000
 AH_SCOL: .long 0x80808000
 AH_BLANK: .long 0x80602020
 AH_POW: .long 10000, 1000, 100, 10, 1
@@ -829,14 +825,27 @@ AH_FTXT: .long 0x46455645, 0x52200000
 ; In Fever an accumulator gives FEVER_SPEED percent: each frame acc += speed, updates = acc / 100;
 ; 0 updates -> skip, otherwise 0C48A168 = updates - 1 (the loop runs 0C48A168 + 1 times). ----------
 fevspeed:
-  mov.l SP_FEV,r0
-  mov.l @r0,r0
-  tst r0,r0
-  bt sp_norm
   mov.l SP_ARR,r0
   mov.l @r0,r0
   tst r0,r0
-  bt sp_norm
+  bt sp_ton
+  mov.l SP_FEV,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bf sp_fev
+; after Fever ran out: 50% during the end window
+  mov.l SP_KIND,r0
+  mov.l @r0,r0
+  cmp/eq #2,r0
+  bf sp_ton
+  mov.l SP_FADE,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bf sp_fev
+sp_ton:
+  bra sp_norm
+  nop
+sp_fev:
 ; Fever speed in tenths of a percent from the enemy bullets on screen (n, both bullet lists):
 ; n <= 100: 1000 - 3n, at most 990 (99% .. 70%), 100 < n < 150: 700 - 4(n - 100) (70% .. 50%), n >= 150: 500
   mov.l r3,@-r15
@@ -904,7 +913,12 @@ sp_acc:
   mov.l SP_SWIN,r1
   mov.l @r1,r0
   tst r0,r0
-  bt sp_ease
+  bf sp_slow
+  mov.l SP_FEV,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bf sp_ease
+sp_slow:
   mov.w SP_500,r2
   mov.l SP_CUR,r1
   mov.l r2,@r1
@@ -1010,6 +1024,8 @@ SP_BCNT: .long 0x0C5108FC
 SP_P2: .long 0x0C4EC6F8
 SP_CUR: .long 0x0C04F880
 SP_SWIN: .long 0x0C04F87C
+SP_KIND: .long 0x0C04F88C
+SP_FADE: .long 0x0C04F878
 SP_HLO: .long 0x0C0D0000
 SP_HHI: .long 0x0C0E0000
 SP_1000: .word 1000
@@ -1326,6 +1342,9 @@ fx_infev:
   mov.b @r1,r2
   cmp/eq r0,r2
   bt fx_nohit
+  mov.l FX_KIND,r1
+  mov #1,r0
+  mov.l r0,@r1
   mov.l FX_CNT,r1
   bra fx_fevend
   nop
@@ -1337,6 +1356,9 @@ fx_nohit:
   bt fx_nobomb
   mov #0,r0
   mov.l r0,@r1
+  mov.l FX_KIND,r1
+  mov #1,r0
+  mov.l r0,@r1
   mov.l FX_CNT,r1
   bra fx_fevend
   nop
@@ -1346,19 +1368,35 @@ fx_nobomb:
   mov #10,r2
   cmp/hi r2,r0
   bt fx_dec
+; ran out
+  mov.l FX_KIND,r2
+  mov #2,r0
+  mov.l r0,@r2
 fx_fevend:
   mov #0,r0
   mov.l r0,@r1
   mov.l r0,@r11
-; Fever over (ran out, bomb or hit): the medal chain starts over at 100; every bullet fades out (8 steps)
-; and 90 steps of grace cover the fade (mpkman puts the normal attacks back)
+; Fever over (ran out, bomb or hit): the medal chain starts over at 100; the end window (fxwin) turns the
+; bullets into medals and keeps enemies from shooting for 4 seconds (121 steps at 50% after running out,
+; 240 steps otherwise); 90 steps of grace
   mov.l FX_CHAIN,r1
   mov.l r0,@r1
   mov.l FX_SWIN,r1
   mov.l r0,@r1
-  mov.l FX_FADE,r1
+  mov.l FX_EFIRST,r1
+  mov #1,r0
+  mov.l r0,@r1
+  mov.l FX_KIND,r1
+  mov.l @r1,r0
+  cmp/eq #2,r0
+  bt fx_fe2
   mov #120,r0
+  bra fx_fe3
   add r0,r0
+fx_fe2:
+  mov #121,r0
+fx_fe3:
+  mov.l FX_FADE,r1
   mov.l r0,@r1
   mov.l FX_GRACE,r1
   mov #90,r0
@@ -1657,65 +1695,14 @@ sc_r:
   rts
   nop
 
-; spawn10k: r4/r5 = position (same axes as item +44/+48). New 10000 medal if there is room.
-spawn10k:
-  sts.l pr,@-r15
-  mov.l r4,@-r15
-  mov.l r5,@-r15
-  mov.l FX_ALLOC,r0
-  jsr @r0
-  mov #1,r4
-  mov.l @r15+,r5
-  mov.l @r15+,r4
-  tst r0,r0
-  bt s10_out
-  mov.l FX_NEWIX,r0
-  mov.l @r0,r6
-  mov.l r6,@-r15
-  mov #120,r0
-  mulu.w r0,r6
-  sts macl,r7
-  mov.l FX_IPOOL,r0
-  add r0,r7
-  mov.l FX_IFLAG,r0
-  mov.l r0,@r7
-  mov #5,r0
-  mov.l r0,@(4,r7)
-  mov #18,r0
-  mov.l r0,@(8,r7)
-  mov #0,r0
-  mov.l r0,@(12,r7)
-  mov.l r4,@(44,r7)
-  mov.l r5,@(48,r7)
-  mov.l r0,@(52,r7)
-  mov.l r0,@(56,r7)
-  mov.l r7,@-r15
-  mov.l FX_IINIT,r0
-  jsr @r0
-  mov r7,r4
-  mov.l @r15+,r7
-  mov.l @r15+,r4
-  mov.l r7,@-r15
-  mov.l FX_IVEL,r0
-  jsr @r0
-  nop
-; pushed up toward the top of the screen, random side, then it falls like any medal
-  mov.l FX_RAND,r0
-  jsr @r0
-  nop
-  mov #1,r5
-  and r0,r5
-  bsr scatterw
-  mov.l @r15+,r4
-s10_out:
-  lds.l @r15+,pr
-  rts
-  nop
   .align 4
 FX_STEP: .long 0x0C4857C4
 FX_RS: .long 0x0C04F844
 FX_BREQ: .long 0x0C04F868
 FX_GRACE: .long 0x0C04F86C
+FX_KIND: .long 0x0C04F88C
+FX_SMALL: .long 0x0C04F890
+FX_EFIRST: .long 0x0C04F894
 FX_MPK: .long 0x0C04F874
 FX_FADE: .long 0x0C04F878
 FX_FCOL: .long 0x02040000
@@ -1760,8 +1747,8 @@ FX_NSLOT: .word 200
 ; fxwin: the Fever start window (bullets -> pushed-up 10000 medals) and end window (bullets fade out)
 fxwin:
   sts.l pr,@-r15
-; ---- Fever start window: first step every enemy bullet becomes a 10000 medal pushed upward, then for
-; 4 seconds any new bullet is removed as soon as it appears (r10 = 1 on the first step) ----
+; ---- Fever start window: first step every enemy bullet becomes a 10000 medal bursting out, then for
+; 4 seconds any new bullet is removed as soon as it appears (r10 = 1 on the first step); medals float ----
   mov.l W_SWIN,r1
   mov.l @r1,r0
   tst r0,r0
@@ -1771,27 +1758,79 @@ fxwin:
   mov #0,r10
   cmp/eq #120,r0
   movt r10
+  bsr b2med
+  nop
+  bsr p2pass
+  nop
+  bsr floatcap
+  nop
+fx_nosw:
+; ---- Fever end window (4 seconds): on the first step every enemy bullet becomes a medal (100 after a hit or
+; the bomb, 10000 when the counter ran out), later bullets are removed as soon as they appear. After the
+; counter ran out the medals float (and fevspeed runs the window at 50%) ----
+  mov.l W_FADE,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt fw_out
+  add #-1,r0
+  mov.l r0,@r1
+  mov.l W_EFIRST,r1
+  mov.l @r1,r10
+  mov #0,r0
+  mov.l r0,@r1
+  mov.l W_KIND,r1
+  mov.l @r1,r0
+  cmp/eq #2,r0
+  movt r2
+  mov #1,r0
+  sub r2,r0
+  mov.l W_SMALL,r1
+  mov.l r0,@r1
+  bsr b2med
+  nop
+  bsr p2pass
+  nop
+  mov.l W_SMALL,r1
+  mov #0,r0
+  mov.l r0,@r1
+  mov.l W_KIND,r1
+  mov.l @r1,r0
+  cmp/eq #2,r0
+  bf fw_out
+  bsr floatcap
+  nop
+fw_out:
+  lds.l @r15+,pr
+  rts
+  nop
+
+; b2med: every live bullet in the main list is removed; with r10 = 1 a medal comes out where it was
+b2med:
+  sts.l pr,@-r15
   mov.l W_BPOOL,r8
   mov.w W_NSLOT,r9
-fx_bl:
+b2_l:
   mov.l @r8,r0
   tst r0,r0
-  bt fx_bn
+  bt b2_n
   mov #0,r0
   mov.l r0,@r8
   tst r10,r10
-  bt fx_bn
+  bt b2_n
   mov.l @(32,r8),r4
   mov.l @(36,r8),r5
   bsr spawn10k
   nop
-fx_bn:
+b2_n:
   dt r9
-  bf/s fx_bl
+  bf/s b2_l
   add #92,r8
-  bsr p2pass
+  lds.l @r15+,pr
+  rts
   nop
-; floating fall: medals fall at most 0.5 px per frame during the 4-second slow motion
+
+; floatcap: medals fall at most 0.5 px per frame (slow-motion windows)
+floatcap:
   mov.l W_IPOOL,r8
   mov.w W_NIT,r9
   mov.l W_FALL,r2
@@ -1810,84 +1849,90 @@ fw_fn:
   dt r9
   bf/s fw_fl
   add #120,r8
-fx_nosw:
-; ---- Fever end window (240 steps = 4 seconds): the bullets on screen at the first step stop, open into a
-; ring and fade over 8 steps; bullets fired later are removed as soon as they appear (r10 = 1 on the first
-; step). Per-bullet step count in the bullet's +60 (unused by the game's bullets) ----
-  mov.l W_FADE,r1
-  mov.l @r1,r0
-  tst r0,r0
-  bt fw_out
-  add #-1,r0
-  mov.l r0,@r1
-  mov #0,r10
-  mov.w W_FIRST,r2
-  cmp/eq r2,r0
-  movt r10
-  mov.l W_BPOOL,r4
-  mov.w W_NSLOT,r5
-fx_fl:
-  mov.l @r4,r0
-  tst r0,r0
-  bt fx_fn
-  mov.l @(60,r4),r3
-  tst r3,r3
-  bf fx_ft
-  tst r10,r10
-  bf fx_fnew
-; fired after Fever ended: remove
-  mov #0,r0
-  bra fx_fn
-  mov.l r0,@r4
-fx_fnew:
-  mov #8,r3
-fx_ft:
-  add #-1,r3
-  mov.l r3,@(60,r4)
-  tst r3,r3
-  bf fx_fk
-  mov #0,r0
-  bra fx_fn
-  mov.l r0,@r4
-fx_fk:
-  mov r3,r2
-  shll2 r2
-  shll2 r2
-  add r2,r2
-  add #31,r2
-  mov r2,r6
-  shll8 r6
-  or r2,r6
-  mov.l W_FCOL,r2
-  or r2,r6
-  mov #0,r0
-  mov.l r0,@(40,r4)
-  mov.l r0,@(44,r4)
-  mov.l r6,@(48,r4)
-fx_fn:
-  dt r5
-  bf/s fx_fl
-  add #92,r4
-; second bullet list (capsule chains): removed outright
-  mov #0,r10
-  bsr p2pass
-  nop
-fw_out:
-  lds.l @r15+,pr
   rts
   nop
   .align 4
 W_SWIN: .long 0x0C04F87C
 W_BPOOL: .long 0x0C4C371C
-W_BCNT: .long 0x0C5108FC
 W_FADE: .long 0x0C04F878
-W_FCOL: .long 0x02040000
+W_EFIRST: .long 0x0C04F894
+W_KIND: .long 0x0C04F88C
+W_SMALL: .long 0x0C04F890
 W_NSLOT: .word 1536
-W_FIRST: .word 239
 W_NIT: .word 200
   .align 4
 W_IPOOL: .long 0x0C52B648
 W_FALL: .long 0xFFFF8000
+
+; spawn10k: r4/r5 = position (same axes as item +44/+48). New 10000 medal if there is room.
+spawn10k:
+  sts.l pr,@-r15
+  mov.l r4,@-r15
+  mov.l r5,@-r15
+  mov.l S1_ALLOC,r0
+  jsr @r0
+  mov #1,r4
+  mov.l @r15+,r5
+  mov.l @r15+,r4
+  tst r0,r0
+  bt s10_out
+  mov.l S1_NEWIX,r0
+  mov.l @r0,r6
+  mov.l r6,@-r15
+  mov #120,r0
+  mulu.w r0,r6
+  sts macl,r7
+  mov.l S1_IPOOL,r0
+  add r0,r7
+  mov.l S1_IFLAG,r0
+  mov.l r0,@r7
+  mov #5,r0
+  mov.l r0,@(4,r7)
+  mov.l S1_SMALL,r0
+  mov.l @r0,r0
+  tst r0,r0
+  mov #18,r0
+  bt s10_lv
+  mov #0,r0
+s10_lv:
+  mov.l r0,@(8,r7)
+  mov #0,r0
+  mov.l r0,@(12,r7)
+  mov.l r4,@(44,r7)
+  mov.l r5,@(48,r7)
+  mov.l r0,@(52,r7)
+  mov.l r0,@(56,r7)
+  mov.l r7,@-r15
+  mov.l S1_IINIT,r0
+  jsr @r0
+  mov r7,r4
+  mov.l @r15+,r7
+  mov.l @r15+,r4
+  mov.l r7,@-r15
+  mov.l S1_IVEL,r0
+  jsr @r0
+  nop
+; pushed up toward the top of the screen, random side, then it falls like any medal
+  mov.l S1_RAND,r0
+  jsr @r0
+  nop
+  mov #1,r5
+  and r0,r5
+  bsr scatterw
+  mov.l @r15+,r4
+s10_out:
+  lds.l @r15+,pr
+  rts
+  nop
+  .align 4
+S1_ALLOC: .long 0x0C07F6A0
+S1_IFLAG: .long 0xC0800004
+S1_IINIT: .long 0x0C080B40
+S1_IPOOL: .long 0x0C52B648
+S1_IVEL: .long 0x0C081330
+S1_NEWIX: .long 0x0C4C24EC
+S1_RAND: .long 0x0C06B450
+S1_SMALL: .long 0x0C04F890
   .align 4
 
 ; p2pass: the game's second enemy bullet list (0C4EC6F8, 144 bytes each: the green/blue capsule chains).
