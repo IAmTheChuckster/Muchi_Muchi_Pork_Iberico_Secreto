@@ -1730,7 +1730,7 @@ spawn10k:
   nop
   mov #1,r5
   and r0,r5
-  bsr scatter
+  bsr scatterw
   mov.l @r15+,r4
 s10_out:
   lds.l @r15+,pr
@@ -1816,6 +1816,25 @@ fx_bn:
   add #92,r8
   bsr p2pass
   nop
+; floating fall: medals fall at most 0.5 px per frame during the 4-second slow motion
+  mov.l W_IPOOL,r8
+  mov.w W_NIT,r9
+  mov.l W_FALL,r2
+fw_fl:
+  mov.l @r8,r0
+  tst r0,r0
+  bt fw_fn
+  mov.l @(4,r8),r0
+  cmp/eq #5,r0
+  bf fw_fn
+  mov.l @(52,r8),r0
+  cmp/gt r0,r2
+  bf fw_fn
+  mov.l r2,@(52,r8)
+fw_fn:
+  dt r9
+  bf/s fw_fl
+  add #120,r8
 fx_nosw:
 ; ---- Fever end window (240 steps = 4 seconds): the bullets on screen at the first step stop, open into a
 ; ring and fade over 8 steps; bullets fired later are removed as soon as they appear (r10 = 1 on the first
@@ -1890,6 +1909,10 @@ W_FADE: .long 0x0C04F878
 W_FCOL: .long 0x02040000
 W_NSLOT: .word 1536
 W_FIRST: .word 239
+W_NIT: .word 200
+  .align 4
+W_IPOOL: .long 0x0C52B648
+W_FALL: .long 0xFFFF8000
   .align 4
 
 ; p2pass: the game's second enemy bullet list (0C4EC6F8, 144 bytes each: the green/blue capsule chains).
@@ -1933,6 +1956,42 @@ P2_HHI: .long 0x0C0E0000
 P2_N: .word 256
 P2_S: .word 144
   .align 4
+
+; scatterw: scatter with a wide sideways push (2-4 px/frame), for the medals that come out of bullets at Fever start
+scatterw:
+  sts.l pr,@-r15
+  mov.l r4,@-r15
+  mov.l SW_RAND,r0
+  jsr @r0
+  nop
+  mov.l @r15,r4
+  mov.l SW_RMASK,r1
+  and r1,r0
+  mov.l SW_VMIN,r1
+  add r1,r0
+  mov.l r0,@(52,r4)
+  mov.l SW_RAND,r0
+  jsr @r0
+  nop
+  mov.l @r15+,r4
+  mov.l SW_HMASK,r1
+  and r1,r0
+  mov.l SW_HOFF,r1
+  add r1,r0
+  tst r5,r5
+  bt scw_r
+  neg r0,r0
+scw_r:
+  mov.l r0,@(56,r4)
+  lds.l @r15+,pr
+  rts
+  nop
+  .align 4
+SW_RAND: .long 0x0C06B450
+SW_RMASK: .long 0x0000FFFF
+SW_VMIN: .long 0x00020000
+SW_HOFF: .long 0x00020000
+SW_HMASK: .long 0x0001FFFF
 
 ; dblb: double enemy bullets while the FEVER counter is full or Fever is on (until the counter is back at 0).
 ; Every new bullet in the main list gets a twin about 8 degrees off and 15% slower. +64 of a bullet marks it as
