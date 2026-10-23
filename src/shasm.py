@@ -160,7 +160,7 @@ class Asm:
         if op == 'jmp': return 0x402B | (int(args[0][2:]) << 8)
         two = {'add': 0x300C, 'sub': 0x3008, 'cmp/eq': 0x3000, 'cmp/hs': 0x3002, 'cmp/ge': 0x3003,
                'cmp/hi': 0x3006, 'cmp/gt': 0x3007, 'tst': 0x2008, 'or': 0x200B, 'and': 0x2009,
-               'mulu.w': 0x200E, 'extu.w': 0x600D, 'extu.b': 0x600C}
+               'mulu.w': 0x200E, 'extu.w': 0x600D, 'extu.b': 0x600C, 'neg': 0x600B}
         if op == 'add' and args[0].startswith('#'):
             v = int(args[0][1:], 0); assert -128 <= v <= 127
             return 0x7000 | (n(1) << 8) | (v & 0xff)
