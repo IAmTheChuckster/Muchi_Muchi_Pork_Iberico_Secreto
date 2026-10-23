@@ -133,6 +133,16 @@ ARROW = 0x3E
 SRC = r'''
 ; ---------- patcher: runs once after boot unpacks the program ----------
 patcher:
+; clear the patch's own RAM (0C04F800-0C04FFFF) on every boot and reset: a reset (test button) or a MiSTer
+; power-on can leave old values there, MAME starts with zeros
+  mov.l LP_RAM,r1
+  mov.w LP_RAMN,r2
+  mov #0,r0
+pclr:
+  mov.l r0,@r1
+  dt r2
+  bf/s pclr
+  add #4,r1
   mov.l LP_SITES,r4
 ploop:
   mov.l @r4+,r1
@@ -152,6 +162,9 @@ pdone:
   .align 4
 LP_SITES: .long sites
 LP_MAIN: .long 0x0C0603D0
+LP_RAM: .long 0x0C04F800
+LP_RAMN: .word 512
+  .align 4
 
 ; ---------- unlock: title screen hook, marks both hidden modes as unlocked (as if the codes were entered) ----------
 unlock:
@@ -474,12 +487,17 @@ lc_end:
   jmp @r2
   nop
 lc_v101:
+; V1.01+ is two loops, ARRANGE+ one: after that the ending
+  mov.l LC_ARR,r6
+  mov.l @r6,r0
+  tst r0,r0
+  bf lc_end
   mov.l LC_IDX,r6
   mov.l @r6,r0
   cmp/eq #0,r0
   bt lc_l2
-  cmp/eq #1,r0
-  bt lc_l3
+  bra lc_end
+  nop
 ; after loop 3: put the mode back to Arcade (score goes to the same ranking as the rest of V1.01+), then ending
   mov #0,r0
   mov.l LC_MODE1,r2
@@ -523,6 +541,7 @@ lc_next:
   .align 4
 LC_FLAG: .long 0x0C04F828
 LC_IDX: .long 0x0C04F82C
+LC_ARR: .long 0x0C04F830
 LC_MISS: .long 0x0C515C4C
 LC_CONT: .long 0x0C076AD8
 LC_END: .long 0x0C076AF0
@@ -548,9 +567,13 @@ loopchk2:
   jmp @r3
   nop
 l2_v101:
+  mov.l L2_ARR,r3
+  mov.l @r3,r3
+  tst r3,r3
+  bf l2_end
   mov.l L2_IDX,r3
   mov.l @r3,r3
-  mov #2,r2
+  mov #1,r2
   cmp/hs r2,r3
   bt l2_end
   mov.l L2_LOOP2,r3
@@ -563,6 +586,7 @@ l2_end:
   .align 4
 L2_FLAG: .long 0x0C04F828
 L2_IDX: .long 0x0C04F82C
+L2_ARR: .long 0x0C04F830
 L2_MISS: .long 0x0C515C4C
 L2_CONT: .long 0x0C0965C8
 L2_END: .long 0x0C0965E0
@@ -1302,9 +1326,9 @@ fx_dec:
   mov.l r0,@r1
 ; ---- medals: juggling with the lard beam, 10000 medals to the player, Fever makes every medal 10000 ----
 fx_juggle:
-  bsr mpkman
-  nop
   bsr fxwin
+  nop
+  bsr dblb
   nop
 ; r10 = beam on (lard form and lard shot firing)
   mov #0,r10
@@ -1843,6 +1867,138 @@ P2_HLO: .long 0x0C0D0000
 P2_HHI: .long 0x0C0E0000
 P2_N: .word 256
 P2_S: .word 144
+  .align 4
+
+; dblb: double enemy bullets while the FEVER counter is full or Fever is on (until the counter is back at 0).
+; Every new bullet in the main list gets a twin about 8 degrees off and 15% slower. +64 of a bullet marks it as
+; seen (0 on every slot the game frees). On the first active step the bullets already there are only marked.
+dblb:
+  mov.l DB_CNT,r0
+  mov.l @r0,r0
+  mov.l DB_MAX,r1
+  cmp/hs r1,r0
+  bt db_on
+  mov.l DB_FEV,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bf db_on
+  mov.l DB_ACT,r1
+  mov #0,r0
+  rts
+  mov.l r0,@r1
+db_on:
+  sts.l pr,@-r15
+  mov.l DB_ACT,r1
+  mov.l @r1,r10
+  mov #1,r0
+  mov.l r0,@r1
+  mov.l DB_POOL,r8
+  mov #0,r9
+db_l:
+  mov r8,r7
+  add #64,r7
+  mov.l @r8,r0
+  tst r0,r0
+  bf db_live
+  bra db_n
+  mov.l r0,@r7
+db_live:
+  mov.l @r7,r0
+  tst r0,r0
+  bf db_n
+  mov #1,r0
+  mov.l r0,@r7
+  tst r10,r10
+  bt db_n
+  bsr dbclone
+  nop
+db_n:
+  add #1,r9
+  mov.w DB_N,r0
+  cmp/hs r0,r9
+  bf/s db_l
+  add #92,r8
+  lds.l @r15+,pr
+  rts
+  nop
+
+; dbclone: r8 = bullet, r9 = its index. Copies it into the next free slot of the same part of the list
+; (0-383, 384-511, 512-1535) and turns the copy: vx' = 27/32 vx - vy/8, vy' = vx/8 + 27/32 vy
+; (velocity at +40/+44: about 8 degrees and 0.85x the speed).
+dbclone:
+  mov r9,r2
+  mov.w DB_P1,r0
+  cmp/hs r0,r9
+  bf dc_e
+  mov.w DB_P2,r0
+  cmp/hs r0,r9
+  bf dc_e
+  mov.w DB_N,r0
+dc_e:
+  mov r8,r3
+dc_s:
+  add #1,r2
+  cmp/hs r0,r2
+  bt dc_out
+  add #92,r3
+  mov.l @r3,r1
+  tst r1,r1
+  bf dc_s
+  mov r8,r4
+  mov r3,r5
+  mov #23,r6
+dc_cp:
+  mov.l @r4+,r1
+  mov.l r1,@r5
+  dt r6
+  bf/s dc_cp
+  add #4,r5
+  mov r3,r7
+  add #64,r7
+  mov #1,r0
+  mov.l r0,@r7
+  mov.l @(40,r3),r4
+  mov.l @(44,r3),r5
+  mov r4,r6
+  add r6,r6
+  add r4,r6
+  mov r6,r1
+  shll2 r1
+  add r1,r1
+  add r1,r6
+  mov #-5,r1
+  shad r1,r6
+  mov r5,r7
+  mov #-3,r1
+  shad r1,r7
+  sub r7,r6
+  mov.l r6,@(40,r3)
+  mov r5,r6
+  add r6,r6
+  add r5,r6
+  mov r6,r1
+  shll2 r1
+  add r1,r1
+  add r1,r6
+  mov #-5,r1
+  shad r1,r6
+  mov r4,r7
+  mov #-3,r1
+  shad r1,r7
+  add r7,r6
+  mov.l r6,@(44,r3)
+dc_out:
+  rts
+  nop
+  .align 4
+DB_CNT: .long 0x0C04F834
+DB_MAX: .long 10000
+DB_FEV: .long 0x0C04F838
+DB_ACT: .long 0x0C04F884
+DB_POOL: .long 0x0C4C371C
+DB_N: .word 1536
+DB_P1: .word 384
+DB_P2: .word 512
   .align 4
 
 ; ---------- timer: find timed boss/midboss, draw seconds remaining ----------
