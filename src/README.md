@@ -16,7 +16,7 @@ python3 build.py mmpork.zip mmpork_patched.zip
 python3 update_patchers.py mmpork.zip mmpork_patched.zip 29
 ```
 
-`mmpork.zip` must hold the original `u4` (CRC `d06cfa42`). Build 45 gives `u4` CRC `cd5a3108`; the patchers save it as `bacon_u4`.
+`mmpork.zip` must hold the original `u4` (CRC `d06cfa42`). Build 46 gives `u4` CRC `44ad3b27`; the patchers save it as `bacon_u4`.
 
 ## Run a MAME test
 
