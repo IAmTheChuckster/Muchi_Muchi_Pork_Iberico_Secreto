@@ -309,7 +309,7 @@ LD_SEL: .long 0x0C04F824
 LD_CELL: .long CELL_TOP
 LD_COLOR: .long 0x60308000
 LD_DIRTY: .long DIRTY_BOTTOM
-MENU_TXT: .long 0x41524341, 0x44452020, 0x48415241, 0x48415241, 0x4D414E50, 0x554B5520, 0x56312E30, 0x312B2020, 0x41525241, 0x4E474520
+MENU_TXT: .long 0x41524341, 0x44452020, 0x48415241, 0x48415241, 0x4D414E50, 0x554B5520, 0x56312E30, 0x312B2020, 0x41525241, 0x4E47452B
 
 ; ---------- V1.01: lard pickup (jumped to from 0C09082A; r1 = meter, r12 = meter address) ----------
 lardadd:
@@ -598,7 +598,7 @@ ML_COLOR: .long 0x60308000
 ML_DIRTY: .long 0x0C4EAC98
 ML_ORIG: .long 0x0C077BD0
 ML_ARR: .long 0x0C04F830
-ML_TXT: .long 0x56312E30, 0x312B2020, 0x41525241, 0x4E474520
+ML_TXT: .long 0x56312E30, 0x312B2020, 0x41525241, 0x4E47452B
 
 ; ---------- wrapper: replaces calls to the text-layer redraw ----------
 wrapper:
@@ -815,6 +815,51 @@ arrfx:
 fx_run:
   mov.l r13,@r1
   mov.l FX_P1,r12
+; ---- extra bomb on respawn: keep the bombs held at the moment of the hit, give them back +1 (max 4) ----
+  mov.b @r12,r0
+  extu.b r0,r0
+  mov.l FX_RS,r6
+  mov.b @r6,r1
+  extu.b r1,r1
+  mov.b r0,@r6
+  mov #-50,r2
+  extu.b r2,r2
+  cmp/eq r2,r1
+  bf fx_rs1
+  cmp/eq r2,r0
+  bt fx_rsx
+; alive -> hit: remember the bombs
+  mov.l FX_O214L,r0
+  mov.b @(r0,r12),r0
+  mov.b r0,@(1,r6)
+  mov #1,r0
+  bra fx_rsx
+  mov.b r0,@(2,r6)
+fx_rs1:
+  cmp/eq r2,r0
+  bf fx_rsx
+  mov.b @(2,r6),r0
+  tst r0,r0
+  bt fx_rsx
+; respawned: bombs = remembered + 1, max 4
+  mov #0,r0
+  mov.b r0,@(2,r6)
+  mov.b @(1,r6),r0
+  add #1,r0
+  mov #4,r1
+  cmp/gt r1,r0
+  bf fx_rsb
+  mov r1,r0
+fx_rsb:
+  mov.l FX_O214L,r1
+  add r12,r1
+; never fewer than the game's own respawn bombs
+  mov.b @r1,r2
+  extu.b r2,r2
+  cmp/gt r0,r2
+  bt fx_rsx
+  mov.b r0,@r1
+fx_rsx:
 ; ---- Fever start: counter full and C pressed this frame ----
   mov.l FX_FEV,r11
   mov.l @r11,r0
@@ -1108,6 +1153,8 @@ s10_out:
   nop
   .align 4
 FX_STEP: .long 0x0C4857C4
+FX_RS: .long 0x0C04F844
+FX_O214L: .long 0x00000214
 FX_LAST: .long 0x0C04F83C
 FX_PST: .long 0x0C04F840
 FX_P1: .long 0x0C510B28

@@ -109,6 +109,8 @@ class Asm:
             if m: return 0x6000 | (R(d) << 8) | (int(m.group(1)) << 4)
             m = re.fullmatch(r'@r(\d+)', d)
             if m and re.fullmatch(r'r\d+', s): return 0x2000 | (int(m.group(1)) << 8) | (R(s) << 4)
+            m = re.fullmatch(r'@\((\d+),r(\d+)\)', d)
+            if m and R(s) == 0 and int(m.group(1)) < 16: return 0x8000 | (int(m.group(2)) << 4) | int(m.group(1))
             raise ValueError('mov.b form ' + a)
         if op in ('mov.l', 'mov.w'):
             sz = op[-1]
