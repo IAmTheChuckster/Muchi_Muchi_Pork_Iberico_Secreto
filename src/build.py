@@ -1095,9 +1095,9 @@ fx_rsx:
   mov.l FX_LARD,r0
   mov #104,r1
   mov.w r1,@(r0,r12)
-; for the next 60 steps every enemy bullet becomes a 10000 medal (Manpuku volleys included)
+; bullets on screen become 10000 medals, then no enemy bullets for 1 second (31 steps at Fever's 50%)
   mov.l FX_SWIN,r1
-  mov #60,r0
+  mov #31,r0
   bra fx_juggle
   mov.l r0,@r1
 ; ---- during Fever: count down 10 per step; a hit ends it ----
@@ -1549,13 +1549,17 @@ FX_NSLOT: .word 200
 ; fxwin: the Fever start window (bullets -> pushed-up 10000 medals) and end window (bullets fade out)
 fxwin:
   sts.l pr,@-r15
-; ---- Fever start window: every enemy bullet becomes a 10000 medal pushed upward ----
+; ---- Fever start window: first step every enemy bullet becomes a 10000 medal pushed upward, then for
+; 1 second any new bullet is removed as soon as it appears (r10 = 1 on the first step) ----
   mov.l W_SWIN,r1
   mov.l @r1,r0
   tst r0,r0
   bt fx_nosw
   add #-1,r0
   mov.l r0,@r1
+  mov #0,r10
+  cmp/eq #30,r0
+  movt r10
   mov.l W_BPOOL,r8
   mov.l W_BCNT,r0
   mov.l @r0,r9
@@ -1563,10 +1567,12 @@ fx_bl:
   mov.l @r8,r0
   tst r0,r0
   bt fx_bn
-  mov.l @(32,r8),r4
-  mov.l @(36,r8),r5
   mov #0,r0
   mov.l r0,@r8
+  tst r10,r10
+  bt fx_bn
+  mov.l @(32,r8),r4
+  mov.l @(36,r8),r5
   bsr spawn10k
   nop
 fx_bn:
@@ -1574,14 +1580,18 @@ fx_bn:
   bf/s fx_bl
   add #92,r8
 fx_nosw:
-; ---- Fever end window (60 steps): every enemy bullet, including new ones, stops, opens into a ring
-; and fades over 8 steps, then vanishes. Per-bullet step count in bytes at 0C04FC00 ----
+; ---- Fever end window (60 steps = 1 second): the bullets on screen at the first step stop, open into a
+; ring and fade over 8 steps; bullets fired later are removed as soon as they appear (r10 = 1 on the first
+; step). Per-bullet step count in bytes at 0C04FC00 ----
   mov.l W_FADE,r1
   mov.l @r1,r0
   tst r0,r0
   bt fw_out
   add #-1,r0
   mov.l r0,@r1
+  mov #0,r10
+  cmp/eq #59,r0
+  movt r10
   mov.l W_BPOOL,r4
   mov.l W_FBUF,r7
   mov.l W_BCNT,r5
@@ -1597,6 +1607,13 @@ fx_fa:
   extu.b r3,r3
   tst r3,r3
   bf fx_ft
+  tst r10,r10
+  bf fx_fnew
+; fired after Fever ended: remove
+  mov #0,r0
+  bra fx_fn
+  mov.l r0,@r4
+fx_fnew:
   mov #8,r3
 fx_ft:
   add #-1,r3
