@@ -612,7 +612,8 @@ modelabel:
   mov.l @r0,r0
   tst r0,r0
   bt ml_v101
-  add #8,r3
+  rts
+  nop
 ml_v101:
   mov.l ML_COLOR,r7
   mov #8,r1
@@ -731,7 +732,7 @@ LW_P1: .long 0x0C510B28
 LW_CNT: .long 0x0C04F834
 LW_MAX: .long 10000
 
-; ---------- ARRANGE HUD: the FEVER counter (0C04F834) under the ARRANGE+ label; 2P works as normal ----------
+; ---------- ARRANGE HUD: the FEVER counter (0C04F834) in place of the mode label; 2P works as normal ----------
 ahud:
   mov.l AH_ARR,r0
   mov.l @r0,r0
@@ -746,22 +747,18 @@ ah_on:
   nop
   lds.l @r15+,pr
 ; full 2P: the 2P label, score, join prompts and inputs are left alone.
-; column 36 rows 8-18 (under the ARRANGE+ label): "FEVER " and the counter, 5 digits right-aligned
+; column 37 rows 11-18 (where the mode label goes, under the hi-score): 3 blanks and the counter,
+; 5 digits right-aligned, in the label colour
   mov.l AH_C36F,r2
   mov.l AH_LCOL,r7
-  mova AH_FTXT,r0
-  mov r0,r5
-  mov #6,r1
-ah_f:
-  mov.b @r5+,r0
+  mov #32,r0
   or r7,r0
   mov.l r0,@r2
-  dt r1
-  bf/s ah_f
-  add #4,r2
+  mov.l r0,@(4,r2)
+  mov.l r0,@(8,r2)
+  add #12,r2
   mov.l AH_CNT,r0
   mov.l @r0,r3
-  mov.l AH_SCOL,r7
   mova AH_POW,r0
   mov r0,r5
   mov #5,r1
@@ -801,7 +798,7 @@ ah_put:
   dt r1
   bf/s ah_d
   add #4,r2
-; redraw column 36
+; redraw column 37
   mov.l AH_DIRTY,r2
   mov #1,r0
   rts
@@ -812,8 +809,8 @@ AH_FX: .long arrfx
 AH_CNT: .long 0x0C04F834
 AH_C39: .long 0x0C484CEC
 AH_C38: .long 0x0C484C70
-AH_C36F: .long 0x0C484B50
-AH_DIRTY: .long 0x0C4EADB8
+AH_C36F: .long 0x0C484BD4
+AH_DIRTY: .long 0x0C4EADC0
 AH_LCOL: .long 0x60308000
 AH_SCOL: .long 0x80808000
 AH_BLANK: .long 0x80602020

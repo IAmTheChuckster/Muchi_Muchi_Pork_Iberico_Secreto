@@ -12,6 +12,6 @@ emu.register_frame_done(function()
   if frame==3300 then
     for col=35,39 do local s=""; for row=0,29 do local v=sp:read_u32(0x0c483a50+(col*30+row)*4); local ch=v&0xff; s=s..((ch>=32 and ch<127) and string.char(ch) or ".") end; print("COL",col,s) end
     print("P2 state",string.format("%02x",sp:read_u8(B2)))
-    local px=manager.machine.screens[":screen"]:pixels(); local f=io.open("/tmp/claude-0/-home-claude/07762dfb-baac-5115-bea4-20e9ebaf285a/scratchpad/hud50.raw","wb"); f:write(px); f:close()
+    local px=manager.machine.screens[":screen"]:pixels(); local f=io.open("/tmp/claude-0/-home-claude/07762dfb-baac-5115-bea4-20e9ebaf285a/scratchpad/hud51.raw","wb"); f:write(px); f:close()
     manager.machine:exit() end
 end)
