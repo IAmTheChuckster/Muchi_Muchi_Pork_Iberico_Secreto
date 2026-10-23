@@ -34,7 +34,7 @@ I did all the testing and planning.
   - The lard shot only fires while B is held. Letting go ends it straight away, with an empty or a full meter, and whatever is left in the lard meter is kept.
   - Power-up and bomb pickups count twice.
   - Small enemies no longer drop the extra medal every 40th kill; that drop is a power-up like the other drops.
-- **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/10/24 IBERICO`.
+- **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/10/24 IBERICO SECRETO` (centred).
 - **Title screen.** `SALE BY AMI` is replaced with `NOT FOR SALE`.
 ## Patching the game
 

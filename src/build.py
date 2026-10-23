@@ -74,7 +74,7 @@ def warn_src():
     for t, c in zip(lines, colors):
         b = t.encode('ascii').ljust(28, b'\0')
         out += '  .long ' + ', '.join('0x%08x' % int.from_bytes(b[i:i + 4], 'big') for i in range(0, 28, 4)) + ', 0x%08x\n' % c
-    for name, text in (('datestr', '2026/10/24'), ('verstr', 'IBERICO'), ('nfsstr', 'NOT FOR SALE')):
+    for name, text in (('datestr', '2026/10/24 IBERICO SECRETO'), ('verstr', ''), ('nfsstr', 'NOT FOR SALE')):
         b = text.encode('ascii') + b'\0'
         b = b.ljust((len(b) + 3) // 4 * 4, b'\0')
         out += name + ':\n  .long ' + ', '.join('0x%08x' % int.from_bytes(b[i:i + 4], 'big') for i in range(0, len(b), 4)) + '\n'
@@ -101,7 +101,8 @@ def patch_sites(ram):
         (0x0C0965F4, 0x0C515C4C, 'loopchk2'),    #   literal -> loopchk2
         (0x0C070184, 0x0C077BD0, 'modelabel'),   # in-game mode name (column 37) -> shows V1.01 too
         (0x0C067AA8, 0x0C0E09A4, 'warntable'),   # warning screen: 12-line text table -> CAVE OWNS!!!
-        (0x0C067AB4, 0x0C0DF658, 'datestr'),     # warning screen: date string -> 2026/10/14
+        (0x0C067AB4, 0x0C0DF658, 'datestr'),     # warning screen: date string -> the whole bottom line
+        (0x0C0679D4, 0xD836E605, '0xD836E602'),  #   bottom line starts at column 2 (was 5): 26 chars centred in 30
         (0x0C067AC4, 0x0C0E0B24, 'verstr'),      # warning screen: MASTER VER. -> ROPPAKU
         (0x0C0679D4, 0xD836E605, '0xD836E604'),  #   date starts at text row 4 (was 5), so the 23-character line is centred
         (0x0C067A20, 0xD428E610, '0xD428E60F'),
