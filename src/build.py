@@ -901,6 +901,15 @@ sp_min:
 sp_acc:
   mov.l @r15+,r5
   mov.l @r15+,r3
+; first 4 seconds of Fever (the start window 0C04F87C): a straight 50%, slow motion for the medal burst
+  mov.l SP_SWIN,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt sp_ease
+  mov.w SP_500,r2
+  mov.l SP_CUR,r1
+  mov.l r2,@r1
+sp_ease:
 ; ease toward the target: the speed moves at most 1% (10 tenths) per call
   mov.l SP_CUR,r1
   mov.l @r1,r0
@@ -1001,6 +1010,7 @@ SP_LASTV: .long 0x0C04F870
 SP_BCNT: .long 0x0C5108FC
 SP_P2: .long 0x0C4EC6F8
 SP_CUR: .long 0x0C04F880
+SP_SWIN: .long 0x0C04F87C
 SP_HLO: .long 0x0C0D0000
 SP_HHI: .long 0x0C0E0000
 SP_1000: .word 1000
