@@ -77,7 +77,8 @@ u23 + 0x400000 zeros + u24 + 0x400000 zeros; nvram index 3 size 135680; rom 0 ib
 
 ## 5. Testing in MAME
 - Use the `cv1000-learn-game` skill for the MAME set-up. Lua scripts in `src/mame_tests/` drive the
-  game (`dofile("work/common.lua")` autoplay: coin, start, menu Down x4 = ARRANGE+, fire).
+  game (`dofile("work/common.lua")` autoplay: coin, start, menu Down x4 = ARRANGE+, fire; common.lua
+  is in the same folder).
 - Screen capture without video: `manager.machine.screens[":screen"]:pixels()` (320x240 BGRA, rotate 90).
 - Watchpoints don't fire on this RAM; breakpoints do (`-debug -debugger none`, `bpset addr,1,{printf ...; g}`).
   Instruction traces need `-nodrc` (DRC trace segfaults).
