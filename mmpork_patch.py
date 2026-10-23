@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Muchi Muchi Pork! Iberico Secreto (Cave CV1000) - patch build 57
+Muchi Muchi Pork! Iberico Secreto (Cave CV1000) - patch build 58
 
 Usage:
     python3 mmpork_patch.py mmpork.zip              -> writes iberico_u4 next to the zip
@@ -9,13 +9,13 @@ Usage:
     python3 mmpork_patch.py mmpork.zip -o OUT       -> writes the patched iberico_u4 to OUT
     python3 mmpork_patch.py u4                      -> a loose original u4 works too (no --zip)
 
-The original u4 must have CRC32 d06cfa42; the result is checked to be a662f829.
+The original u4 must have CRC32 d06cfa42; the result is checked to be afa6ea1d.
 Only the Python standard library is used.
 """
 import argparse, base64, os, sys, zipfile, zlib
 
 ORIG_CRC = 0xD06CFA42
-PATCHED_CRC = 0xA662F829
+PATCHED_CRC = 0xAFA6EA1D
 U4_SIZE = 0x200000
 OUT_NAME = "iberico_u4"
 SET_NAME = "mmporkibc.zip"
@@ -25,8 +25,8 @@ MRA_NAME = "Muchi Muchi Pork! Iberico Secreto.mra"
 PATCHES = [
     (0x1C4, base64.b64decode("H4AAAA==")),
     (0x1F0000, base64.b64decode(
-    "BdEG0gbTFmACIhBD+48EcgTQK0AJAAkAH4AAAAQMAMAAAF4GBAwowAzRGZIA4AIhEEL8jwRxB9RG"
-    "YRghBolGZUZmEmJQMveL9q9iIQLQK0AJAAkABAyg1wYM0AMEDAD4AAIJAAHgA9ECIQPRAiED0CtA"
+    "BdEG0gbTFmACIhBD+48EcgTQK0AJAAkAH4AAAAQMAMAAAGQGBAwowAzRGZIA4AIhEEL8jwRxB9RG"
+    "YRghBolGZUZmEmJQMveL9q9iIQLQK0AJAAkABAys1wYM0AMEDAD4AAIJAAHgA9ECIQPRAiED0CtA"
     "CQBIDKwkTgxArAYMcBAl0RJjM2Ul0iBgA2IByAOJ/3MRQwCJAOMjYALIBIkBcwTgBzMAiwTjMiEA"
     "4iLWLdczYAOIAYkEiAKLAeIf1irXJdByIBvQIiAA4iEQM2AEiCkCItAiIBrQYiAa0GIgMDUCiRDQ"
     "C0Al5B3RE+IA4AIhEEL8jwRxCtoH0RJgAYgEiQKIBYkI0CtACQAI0CtACQAH0CtACQAJAAQMJPhI"
@@ -130,16 +130,16 @@ PATCHES = [
     "AABwIACAU0FPU0lDVEFERUkgVE5MRUVMVENBVQBMAAAAAHAgAIBSUFBPUkVZVFIgTUVJQSBOSVdI"
     "VAAAAAAAAAAAcCAAgEhUSUUgUkVSUFNDRUlURVZSIEdJVEgAUwAAAABwIACAT0hETFJFLlMAAAAA"
     "AAAAAAAAAAAAAAAAAAAAAHAgAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcCAAgCAgICAg"
-    "IEFIRVZGIE5VISEgISAgICAgIAAAAAAgcAAQMDI2MjEvLzA0MgAAQklSRUNJAE9PTiBUT0YgUkFT"
-    "RUwAAAAABgxM/AYMcBAEDETEBgyc0gYMcBAEDGTABgxE0AcM0HsEDHTBBgwEzxOLTtoTiwHQBgwI"
-    "z6BgM8krQAkABgwMzwGIAo8EDIDACQwoCBB/AXEQfwfQCQwsCB1gaIgrQAkACQxICAkACQAEDPjB"
-    "BwzIajJiKCId1CtEBwzMahCP827zbgkABwxAa1EMTFwEDNDCCQzAZQzTMGIM0ytDCQzEZSgiC4sJ"
-    "AAuLCQz0ZVEMTFwEDIDDBwyEAQcM0HsEDNDDBgyoeg4MpAkEDPzVBgy0eg0MWPYEDHzXBgzEeg4M"
-    "JAsEDIjXBgzUeTbYBeY22ATmBgwgeijUEOYo1A/mBgw40A4MqA8EDJDXBwyohUwBE2BMAXPTBwys"
-    "hSDJCCArQxNgBwx4hwkACQAEDCjCDgwkKwgM4PgEDHTCDgxEKwgMAPwEDHrCDgxkKwgMwPwEDIDC"
-    "DgyEKwgMIP8EDIbCDgzEKwkMAAAEDDDIBwwAg3NgQMlzYCrQBwwEgwggSYkrQHNgBwysgwkACQAE"
-    "DOTHBgyU+XJg/4i40CtABgyY+WuNAOoJAADqBwyYRQcM8N0EDIzHBwz8SAcM8N0EDIzHBgx4/AkA"
-    "CQAEDAjGDQwodU4MPKwEDIj4AAAAAA==")),
+    "IEFIRVZGIE5VISEgISAgICAgIAAAAAAgcAAQMDI2MjEvLzA0MkkgRUJJUk9DUyBDRUVST1QAAAAA"
+    "AABPTiBUT0YgUkFTRUwAAAAABgxM/AYMcBAEDETEBgyc0gYMcBAEDGTABgxE0AcM0HsEDHTBBgwE"
+    "zxOLTtoTiwHQBgwIz6BgM8krQAkABgwMzwGIAo8EDIDACQwoCBB/AXEQfwfQCQwsCB1gaIgrQAkA"
+    "CQxICAkACQAEDPjBBwzIajJiKCId1CtEBwzMahCP827zbgkABwxAa1EMTFwEDNDCCQzAZQzTMGIM"
+    "0ytDCQzEZSgiC4sJAAuLCQz0ZVEMTFwEDIDDBwyEAQcM0HsEDNDDBgyoeg4MpAkEDPzVBgy0eg0M"
+    "WPYEDHzXBgzUeTbYBeY22ALmBgzEeg4MJAsEDJjXBgzUeTbYBeY22ATmBgwgeijUEOYo1A/mBgw4"
+    "0A4MqA8EDJzXBwyohUwBE2BMAXPTBwyshSDJCCArQxNgBwx4hwkACQAEDCjCDgwkKwgM4PgEDHTC"
+    "DgxEKwgMAPwEDHrCDgxkKwgMwPwEDIDCDgyEKwgMIP8EDIbCDgzEKwkMAAAEDDDIBwwAg3NgQMlz"
+    "YCrQBwwEgwggSYkrQHNgBwysgwkACQAEDOTHBgyU+XJg/4i40CtABgyY+WuNAOoJAADqBwyYRQcM"
+    "8N0EDIzHBwz8SAcM8N0EDIzHBgx4/AkACQAEDAjGDQwodU4MPKwEDIj4AAAAAA==")),
 ]
 
 
@@ -195,8 +195,8 @@ MRA_TEMPLATE = """<!--
     <nvram index="3" size="135680"/>
 
     <rom index="0" zip="mmporkibc.zip" md5="none">
-        <part name="iberico_u4" crc="a662f829"/>
-        <part name="iberico_u4" crc="a662f829"/>
+        <part name="iberico_u4" crc="afa6ea1d"/>
+        <part name="iberico_u4" crc="afa6ea1d"/>
     </rom>
 
     <buttons names="B1,B2,B3,B4,Start,Coin,Test,Service,Save State" default="A,B,X,Y,Start,R,L,Select"/>
@@ -235,7 +235,7 @@ def mra_text():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into iberico_u4 (Iberico Secreto, build 57)")
+    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into iberico_u4 (Iberico Secreto, build 58)")
     ap.add_argument("input", help="mmpork.zip or a loose original u4 file")
     ap.add_argument("-o", "--output", help="where to write iberico_u4")
     ap.add_argument("--zip", action="store_true", help="also write mmporkibc.zip (input must be a zip)")
