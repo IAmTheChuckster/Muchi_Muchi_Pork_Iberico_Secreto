@@ -111,14 +111,17 @@ def patch_sites(ram):
         (0x0C0E2B44, 0x0C08FC00, 'dbl_bp'),      #   big power-up collect
         (0x0C0E2B64, 0x0C08FCC0, 'dbl_sb'),      #   small bomb collect
         (0x0C0E2B84, 0x0C08FF20, 'dbl_bb'),      #   big bomb collect
-        (0x0C0E2BC4, 0x0C090000, 'medcol'),      # ARRANGE: medal collect -> FEVER counter  #   second part starts at row 15 (was 16)
+        (0x0C0E2BC4, 0x0C090000, 'medcol'),      # ARRANGE: medal collect -> FEVER counter
+        (0x0C06F994, 0x607288FF, '0xD0B8402B'),  # game loop skip test -> mov.l @(0C06FC78),r0 / jmp @r0
+        (0x0C06F998, 0x8D6BEA00, '0x0009EA00'),  #   nop (delay slot); fevspeed decides skip or run
+        (0x0C06FC78, 0x00090009, 'fevspeed'),    #   literal in padding after the literal pool  #   second part starts at row 15 (was 16)
     ]
     if ram is not None:
         for a, old, _ in sites:
             assert rd(a) == old, hex(a)
     return sites
 
-FEVER_SPEED = 75   # game speed in Fever mode, percent of normal (100 = normal, 90 = 10% slower, 110 = 10% faster)
+FEVER_SPEED = 50   # game speed in Fever mode, percent of normal (100 = normal, 90 = 10% slower, 110 = 10% faster)
 MENU_COL = 23   # top line of the menu (text-layer column; game draws the mode name at column 20, row 11)
 MENU_ROW = 9
 ARROW = 0x3E
@@ -644,9 +647,6 @@ ah_on:
   mov.l AH_FX,r0
   jsr @r0
   nop
-  mov.l AH_SPD,r0
-  jsr @r0
-  nop
   lds.l @r15+,pr
 ; hide the 2P Start button (bit 0x80 of the P2 input copies)
   mova AH_P2IN,r0
@@ -740,7 +740,6 @@ ah_put:
   .align 4
 AH_ARR: .long 0x0C04F830
 AH_FX: .long arrfx
-AH_SPD: .long fevspeed
 AH_CNT: .long 0x0C04F834
 AH_C39: .long 0x0C484CEC
 AH_C38: .long 0x0C484C70
@@ -753,23 +752,24 @@ AH_P2IN: .long 0x0C481DF9, 0x0C481E39, 0x0C481E79, 0x0C481EFD, 0x0C481F3D, 0x0C4
 AH_POW: .long 1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1
 AH_FTXT: .long 0x46455645, 0x52000000
 
-; ---------- Fever game speed: runs every frame. The game does (0C48A168 + 1) updates per frame (-1 = none),
-; so FEVER_SPEED percent is reached by an accumulator: each frame acc += speed, updates = acc / 100. ----------
+; ---------- Fever game speed: replaces the game loop's "skip the world update when 0C48A168 == -1" test
+; (jumped to from 0C06F996, r7 = 0C48A168). Runs every frame the world could update, so nothing is left stale.
+; In Fever an accumulator gives FEVER_SPEED percent: each frame acc += speed, updates = acc / 100;
+; 0 updates -> skip, otherwise 0C48A168 = updates - 1 (the loop runs 0C48A168 + 1 times). ----------
 fevspeed:
-  mov.l SP_GSPD,r3
   mov.l SP_FEV,r0
   mov.l @r0,r0
   tst r0,r0
   bt sp_norm
-  mov.l SP_PAUSE,r0
-  mov.b @r0,r0
+  mov.l SP_ARR,r0
+  mov.l @r0,r0
   tst r0,r0
-  bf sp_norm
+  bt sp_norm
   mov.l SP_ACC,r1
   mov.l @r1,r0
   mov.w SP_SPEED,r2
   add r2,r0
-  mov #-1,r2
+  mov #0,r2
   mov #100,r4
 sp_div:
   cmp/hs r4,r0
@@ -779,17 +779,33 @@ sp_div:
   add #1,r2
 sp_set:
   mov.l r0,@r1
-  rts
-  mov.l r2,@r3
+  tst r2,r2
+  bt sp_skip
+  add #-1,r2
+  bra sp_go
+  mov.l r2,@r7
 sp_norm:
+  mov.l @r7,r0
+  cmp/eq #-1,r0
+  bt sp_skip
   mov #0,r0
-  rts
-  mov.l r0,@r3
+  mov.l r0,@r7
+sp_go:
+  mov #0,r10
+  mov.l SP_RUN,r0
+  jmp @r0
+  nop
+sp_skip:
+  mov #0,r10
+  mov.l SP_SKIP,r0
+  jmp @r0
+  nop
   .align 4
-SP_GSPD: .long 0x0C48A168
 SP_FEV: .long 0x0C04F838
-SP_PAUSE: .long 0x0C51091C
+SP_ARR: .long 0x0C04F830
 SP_ACC: .long 0x0C04F850
+SP_RUN: .long 0x0C06F99C
+SP_SKIP: .long 0x0C06FA72
 SP_SPEED: .word FEVER_SPEED
   .align 4
 
@@ -816,6 +832,20 @@ medcol:
   mova MC_ADD,r0
   add r0,r1
   mov.l @r1,r1
+; r1 = tenths of a counter point (0.10% of the medal value); whole points move to the counter
+  mov.l MC_FRAC,r3
+  mov.l @r3,r0
+  add r1,r0
+  mov #0,r1
+mc_div:
+  mov #10,r2
+  cmp/hs r2,r0
+  bf mc_dd
+  sub r2,r0
+  bra mc_div
+  add #1,r1
+mc_dd:
+  mov.l r0,@r3
   mov.l MC_CNT,r2
   mov.l @r2,r0
   add r1,r0
@@ -836,7 +866,8 @@ MC_CNT: .long 0x0C04F834
 MC_POOL: .long 0x0C52B648
 MC_MAX: .long 10000
 MC_ORIG: .long 0x0C090000
-MC_ADD: .long 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000
+MC_FRAC: .long 0x0C04F854
+MC_ADD: .long 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100
 
 ; ---------- ARRANGE per-step effects (called from ahud): Fever start/countdown/end, medal juggling, 10000 medals pulled to the player ----------
 ; patch RAM: 0C04F834 counter, 0C04F838 fever flag, 0C04F83C last step, 0C04F840 last player state byte, 0C04FA00.. per-item split step (word x 200)
@@ -980,6 +1011,9 @@ fx_nohit:
   mov #0,r0
   mov.l r0,@r1
   mov.l r0,@r11
+; Fever ran out: the medal chain starts over at 100
+  mov.l FX_CHAIN,r1
+  mov.l r0,@r1
   bra fx_juggle
   nop
 fx_dec:
@@ -993,7 +1027,8 @@ fx_juggle:
   mov.l FX_MECH,r1
   tst r1,r0
   bt fx_nob
-  mov.w FX_O20A,r0
+  mov.l FX_O214L,r0
+  add #-10,r0
   mov.b @(r0,r12),r0
   tst r0,r0
   bt fx_nob
@@ -1002,7 +1037,8 @@ fx_nob:
 ; count medals on screen -> r9
   mov.l FX_IPOOL,r8
   mov #0,r9
-  mov.w FX_NSLOT,r7
+  mov #100,r7
+  add #100,r7
 fx_cnt:
   mov.l @r8,r0
   tst r0,r0
@@ -1025,11 +1061,17 @@ fx_m:
   mov.l @(4,r8),r0
   cmp/eq #5,r0
   bf fx_mn
-; Fever: every medal is 10000
+; Fever, or FEVER counter full: every medal is 10000
   mov.l FX_FEV,r0
   mov.l @r0,r0
   tst r0,r0
-  bt fx_nf
+  bf fx_all
+  mov.l FX_CNT,r0
+  mov.l @r0,r0
+  mov.l FX_MAX,r1
+  cmp/hs r1,r0
+  bf fx_nf
+fx_all:
   mov.l @(8,r8),r0
   cmp/eq #18,r0
   bt fx_nf
@@ -1040,13 +1082,7 @@ fx_m:
 fx_nf:
   mov.l @(8,r8),r0
   cmp/eq #18,r0
-  bf fx_beam
-; 10000 medal: move it onto the player so the game collects it
-  mov.l @(28,r12),r0
-  mov.l r0,@(44,r8)
-  mov.l @(32,r12),r0
-  bra fx_mn
-  mov.l r0,@(48,r8)
+  bt fx_mn
 fx_beam:
   tst r10,r10
   bt fx_mn
@@ -1090,7 +1126,8 @@ fx_beam:
   nop
 fx_mn:
   add #1,r11
-  mov.w FX_NSLOT,r0
+  mov #100,r0
+  add #100,r0
   cmp/hs r0,r11
   bf/s fx_m
   add #120,r8
@@ -1144,13 +1181,46 @@ mcl_cp:
   add r0,r1
   mov.w r13,@r1
   add #1,r9
+  mov.l r6,@-r15
   mov.l FX_IVEL,r0
   jsr @r0
   mov r5,r4
   mov.l FX_IVEL,r0
   jsr @r0
   mov r11,r4
+; send both halves off in random directions: up 1.5-6.5 px/frame, sideways -2.5..+2.5 px/frame
+  mov.l @r15+,r4
+  bsr scatter
+  nop
+  bsr scatter
+  mov r8,r4
 mcl_out:
+  lds.l @r15+,pr
+  rts
+  nop
+
+; scatter: r4 = item. Random pop-up (+52 vertical speed) and sideways (+56) speed. Keeps r8-r13.
+scatter:
+  sts.l pr,@-r15
+  mov.l r4,@-r15
+  mov.l FX_RAND,r0
+  jsr @r0
+  nop
+  mov.l @r15,r4
+  mov.l FX_RMASK,r1
+  and r1,r0
+  mov.l FX_VMIN,r1
+  add r1,r0
+  mov.l r0,@(52,r4)
+  mov.l FX_RAND,r0
+  jsr @r0
+  nop
+  mov.l @r15+,r4
+  mov.l FX_RMASK,r1
+  and r1,r0
+  mov.l FX_HOFF,r1
+  sub r1,r0
+  mov.l r0,@(56,r4)
   lds.l @r15+,pr
   rts
   nop
@@ -1203,6 +1273,11 @@ s10_out:
   .align 4
 FX_STEP: .long 0x0C4857C4
 FX_RS: .long 0x0C04F844
+FX_CHAIN: .long 0x0C53F4A4
+FX_RAND: .long 0x0C06B450
+FX_RMASK: .long 0x0004FFFF
+FX_VMIN: .long 0x00018000
+FX_HOFF: .long 0x00028000
 FX_LARD: .long 0x0000020E
 FX_O214L: .long 0x00000214
 FX_LAST: .long 0x0C04F83C
