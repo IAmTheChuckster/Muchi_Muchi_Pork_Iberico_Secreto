@@ -1030,7 +1030,7 @@ MC_POOL: .long 0x0C52B648
 MC_MAX: .long 10000
 MC_ORIG: .long 0x0C090000
 MC_FRAC: .long 0x0C04F854
-MC_ADD: .long 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500
+MC_ADD: .long 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100
 
 ; ---------- ARRANGE per-step effects (called from ahud): Fever start/countdown/end, medal juggling, 10000 medals pulled to the player ----------
 ; patch RAM: 0C04F834 counter, 0C04F838 fever flag, 0C04F83C last step, 0C04F840 last player state byte, 0C04FA00.. per-item split step (word x 200)
@@ -1132,13 +1132,6 @@ fx_rsx:
   mov.l FX_LARD,r0
   mov #104,r1
   mov.w r1,@(r0,r12)
-; Manpuku attacks during Fever: remember the mode and switch to Manpuku (1)
-  mov.l FX_MODE1,r1
-  mov.l @r1,r0
-  mov.l FX_SAVE,r2
-  mov.l r0,@r2
-  bsr fevrules
-  mov #1,r0
 ; cancel every enemy bullet into a 10000 medal (as many as there is room for)
   mov.l FX_BPOOL,r8
   mov.l FX_BCNT,r0
@@ -1166,11 +1159,8 @@ fx_infev:
   mov.b @r1,r2
   cmp/eq r0,r2
   bt fx_nohit
-  mov #0,r0
-  mov.l r0,@r11
-  bsr fevrules
-  nop
-  bra fx_juggle
+  mov.l FX_CNT,r1
+  bra fx_fevend
   nop
 fx_nohit:
 ; bomb pressed during Fever (the bomb itself was blocked by bombhook): Fever ends, counter 0, chain restarts
@@ -1193,18 +1183,64 @@ fx_fevend:
   mov #0,r0
   mov.l r0,@r1
   mov.l r0,@r11
-; Fever over (ran out or bomb): the medal chain starts over at 100, normal attacks again
+; Fever over (ran out, bomb or hit): the medal chain starts over at 100; every bullet fades out (8 steps)
+; and 90 steps of grace cover the fade (mpkman puts the normal attacks back)
   mov.l FX_CHAIN,r1
   mov.l r0,@r1
-  bsr fevrules
-  nop
+  mov.l FX_FADE,r1
+  mov #8,r0
+  mov.l r0,@r1
+  mov.l FX_GRACE,r1
+  mov #90,r0
   bra fx_juggle
-  nop
+  mov.l r0,@r1
 fx_dec:
   sub r2,r0
   mov.l r0,@r1
 ; ---- medals: juggling with the lard beam, 10000 medals to the player, Fever makes every medal 10000 ----
 fx_juggle:
+  bsr mpkman
+  nop
+; ---- bullet fade after Fever: bullets stop, flash and fade, then vanish ----
+  mov.l FX_FADE,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt fx_nofade
+  add #-1,r0
+  mov.l r0,@r1
+  mov r0,r3
+  mov r0,r2
+  shll2 r2
+  shll2 r2
+  add r2,r2
+  add #31,r2
+  mov r2,r6
+  shll8 r6
+  or r2,r6
+  mov.l FX_FCOL,r2
+  or r2,r6
+  mov.l FX_BPOOL,r4
+  mov.l FX_BCNT,r5
+  mov.l @r5,r5
+fx_fl:
+  mov.l @r4,r0
+  tst r0,r0
+  bt fx_fn
+  tst r3,r3
+  bf fx_fk
+  mov #0,r0
+  bra fx_fn
+  mov.l r0,@r4
+fx_fk:
+  mov #0,r0
+  mov.l r0,@(40,r4)
+  mov.l r0,@(44,r4)
+  mov.l r6,@(48,r4)
+fx_fn:
+  dt r5
+  bf/s fx_fl
+  add #92,r4
+fx_nofade:
 ; r10 = beam on (lard form and lard shot firing)
   mov #0,r10
   mov.l @r12,r0
@@ -1373,7 +1409,7 @@ mcl_cp:
   mov.l FX_IVEL,r0
   jsr @r0
   mov r11,r4
-; push the two halves apart: both up 0.5-2.5 px/frame, one left and one right at 2-4 px/frame
+; pop the two halves up toward the top of the screen (3-6 px/frame), one drifting left and one right (1-2 px/frame)
   mov.l @r15+,r4
   bsr scatter
   mov #0,r5
@@ -1382,6 +1418,50 @@ mcl_cp:
   mov #1,r5
 mcl_out:
   lds.l @r15+,pr
+  rts
+  nop
+
+; mpkman: Manpuku attacks while the FEVER counter is full or Fever is on; the mode is saved when they start
+; and put back when both are over
+mpkman:
+  mov.l FX_FEV,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bf mk_want
+  mov.l FX_CNT,r1
+  mov.l @r1,r0
+  mov.l FX_MAX,r2
+  cmp/hs r2,r0
+  bt mk_want
+  mov.l FX_MPK,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt mk_out
+  mov #0,r0
+  mov.l r0,@r1
+  mov.l FX_SAVE,r1
+  bra mk_set
+  mov.l @r1,r0
+mk_want:
+  mov.l FX_MPK,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bf mk_out
+  mov #1,r0
+  mov.l r0,@r1
+  mov.l FX_MODE1,r1
+  mov.l @r1,r0
+  mov.l FX_SAVE,r1
+  mov.l r0,@r1
+  mov #1,r0
+mk_set:
+  mov.l FX_MODE1,r1
+  mov.l r0,@r1
+  mov.l FX_MODE2,r1
+  mov.b r0,@r1
+  mov.l FX_MODE3,r1
+  mov.b r0,@r1
+mk_out:
   rts
   nop
 
@@ -1470,9 +1550,18 @@ spawn10k:
   mov r7,r4
   mov.l @r15+,r7
   mov.l @r15+,r4
+  mov.l r7,@-r15
   mov.l FX_IVEL,r0
   jsr @r0
   nop
+; pushed up toward the top of the screen, random side, then it falls like any medal
+  mov.l FX_RAND,r0
+  jsr @r0
+  nop
+  mov #1,r5
+  and r0,r5
+  bsr scatter
+  mov.l @r15+,r4
 s10_out:
   lds.l @r15+,pr
   rts
@@ -1482,16 +1571,19 @@ FX_STEP: .long 0x0C4857C4
 FX_RS: .long 0x0C04F844
 FX_BREQ: .long 0x0C04F868
 FX_GRACE: .long 0x0C04F86C
+FX_MPK: .long 0x0C04F874
+FX_FADE: .long 0x0C04F878
+FX_FCOL: .long 0x02040000
 FX_MODE1: .long 0x0C4EAC3C
 FX_MODE2: .long 0x0C48227F
 FX_MODE3: .long 0x0C516FDC
 FX_SAVE: .long 0x0C04F860
 FX_CHAIN: .long 0x0C53F4A4
 FX_RAND: .long 0x0C06B450
-FX_RMASK: .long 0x0001FFFF
-FX_VMIN: .long 0x00008000
-FX_HOFF: .long 0x00020000
-FX_HMASK: .long 0x0001FFFF
+FX_RMASK: .long 0x0002FFFF
+FX_VMIN: .long 0x00030000
+FX_HOFF: .long 0x00010000
+FX_HMASK: .long 0x0000FFFF
 FX_LARD: .long 0x0000020E
 FX_O214L: .long 0x00000214
 FX_LAST: .long 0x0C04F83C
