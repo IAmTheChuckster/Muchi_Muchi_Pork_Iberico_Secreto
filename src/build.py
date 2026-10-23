@@ -858,8 +858,8 @@ SP_500: .word 500
 SP_150: .word 150
   .align 4
 
-; ---------- ARRANGE+: player hit (tail-jumped to from 0C074486 / 0C074848, r4 = player). During Fever the hit
-; does not kill: it asks arrfx to end Fever (same request as the bomb) and gives 90 steps of grace, so the bullet
+; ---------- ARRANGE+: player hit (tail-jumped to from 0C074486 / 0C074848, r4 = player). During Fever, or with
+; the counter full, the hit does not kill: it asks arrfx to end (or start) Fever (same request as the bomb) and gives 90 steps of grace, so the bullet
 ; or enemy that hit cannot kill straight after. Otherwise the game's hit routine 0C07DDF0 runs as normal. ----------
 hithook:
   mov.l HH_ARR,r0
@@ -875,7 +875,14 @@ hithook:
   mov.l HH_FEV,r0
   mov.l @r0,r0
   tst r0,r0
-  bt hh_go
+  bf hh_req
+; not in Fever: with the counter full the hit starts Fever instead
+  mov.l HH_CNT,r0
+  mov.l @r0,r0
+  mov.l HH_MAX,r2
+  cmp/hs r2,r0
+  bf hh_go
+hh_req:
   mov #90,r0
   mov.l r0,@r1
   mov.l HH_REQ,r1
@@ -894,6 +901,8 @@ HH_FEV: .long 0x0C04F838
 HH_REQ: .long 0x0C04F868
 HH_GRACE: .long 0x0C04F86C
 HH_HIT: .long 0x0C07DDF0
+HH_CNT: .long 0x0C04F834
+HH_MAX: .long 10000
 
 ; ---------- ARRANGE+: bomb button check (jumped to from 0C078302; r0 = buttons, r8 = player). In ARRANGE+, when the
 ; FEVER counter is full or Fever is on, C does not bomb: it sets the request flag 0C04F868 for arrfx instead.
