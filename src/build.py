@@ -1137,13 +1137,6 @@ fx_fevend:
   mov.l r0,@r1
   mov.l FX_SWIN,r1
   mov.l r0,@r1
-  mov.l FX_FBUF,r1
-  mov #96,r2
-fx_fclr:
-  mov.l r0,@r1
-  dt r2
-  bf/s fx_fclr
-  add #4,r1
   mov.l FX_FADE,r1
   mov #120,r0
   mov.l r0,@r1
@@ -1510,7 +1503,6 @@ FX_MPK: .long 0x0C04F874
 FX_FADE: .long 0x0C04F878
 FX_FCOL: .long 0x02040000
 FX_SWIN: .long 0x0C04F87C
-FX_FBUF: .long 0x0C04FC00
 FX_MODE1: .long 0x0C4EAC3C
 FX_MODE2: .long 0x0C48227F
 FX_MODE3: .long 0x0C516FDC
@@ -1561,8 +1553,7 @@ fxwin:
   cmp/eq #60,r0
   movt r10
   mov.l W_BPOOL,r8
-  mov.l W_BCNT,r0
-  mov.l @r0,r9
+  mov.w W_NSLOT,r9
 fx_bl:
   mov.l @r8,r0
   tst r0,r0
@@ -1579,10 +1570,12 @@ fx_bn:
   dt r9
   bf/s fx_bl
   add #92,r8
+  bsr p2pass
+  nop
 fx_nosw:
 ; ---- Fever end window (120 steps = 2 seconds): the bullets on screen at the first step stop, open into a
 ; ring and fade over 8 steps; bullets fired later are removed as soon as they appear (r10 = 1 on the first
-; step). Per-bullet step count in bytes at 0C04FC00 ----
+; step). Per-bullet step count in the bullet's +60 (unused by the game's bullets) ----
   mov.l W_FADE,r1
   mov.l @r1,r0
   tst r0,r0
@@ -1593,18 +1586,12 @@ fx_nosw:
   cmp/eq #119,r0
   movt r10
   mov.l W_BPOOL,r4
-  mov.l W_FBUF,r7
-  mov.l W_BCNT,r5
-  mov.l @r5,r5
+  mov.w W_NSLOT,r5
 fx_fl:
   mov.l @r4,r0
   tst r0,r0
-  bf fx_fa
-  bra fx_fn
-  mov.b r0,@r7
-fx_fa:
-  mov.b @r7,r3
-  extu.b r3,r3
+  bt fx_fn
+  mov.l @(60,r4),r3
   tst r3,r3
   bf fx_ft
   tst r10,r10
@@ -1617,7 +1604,7 @@ fx_fnew:
   mov #8,r3
 fx_ft:
   add #-1,r3
-  mov.b r3,@r7
+  mov.l r3,@(60,r4)
   tst r3,r3
   bf fx_fk
   mov #0,r0
@@ -1639,10 +1626,13 @@ fx_fk:
   mov.l r0,@(44,r4)
   mov.l r6,@(48,r4)
 fx_fn:
-  add #1,r7
   dt r5
   bf/s fx_fl
   add #92,r4
+; second bullet list (capsule chains): removed outright
+  mov #0,r10
+  bsr p2pass
+  nop
 fw_out:
   lds.l @r15+,pr
   rts
@@ -1652,8 +1642,51 @@ W_SWIN: .long 0x0C04F87C
 W_BPOOL: .long 0x0C4C371C
 W_BCNT: .long 0x0C5108FC
 W_FADE: .long 0x0C04F878
-W_FBUF: .long 0x0C04FC00
 W_FCOL: .long 0x02040000
+W_NSLOT: .word 1536
+  .align 4
+
+; p2pass: the game's second enemy bullet list (0C4EC6F8, 144 bytes each: the green/blue capsule chains).
+; Every live record (flag set, handler in 0C0D0000-0C0DFFFF) is removed; with r10 = 1 a 10000 medal
+; comes out where it was (+48 vertical, +52 horizontal).
+p2pass:
+  sts.l pr,@-r15
+  mov.l P2_BASE,r8
+  mov.w P2_N,r9
+p2l:
+  mov.l @r8,r0
+  tst r0,r0
+  bt p2n
+  mov.l @(4,r8),r0
+  mov.l P2_HLO,r1
+  cmp/hs r1,r0
+  bf p2n
+  mov.l P2_HHI,r1
+  cmp/hs r1,r0
+  bt p2n
+  mov #0,r0
+  mov.l r0,@r8
+  tst r10,r10
+  bt p2n
+  mov.l @(48,r8),r4
+  mov.l @(52,r8),r5
+  bsr spawn10k
+  nop
+p2n:
+  mov.w P2_S,r0
+  add r0,r8
+  dt r9
+  bf p2l
+  lds.l @r15+,pr
+  rts
+  nop
+  .align 4
+P2_BASE: .long 0x0C4EC6F8
+P2_HLO: .long 0x0C0D0000
+P2_HHI: .long 0x0C0E0000
+P2_N: .word 256
+P2_S: .word 144
+  .align 4
 
 ; ---------- timer: find timed boss/midboss, draw seconds remaining ----------
 timer:
