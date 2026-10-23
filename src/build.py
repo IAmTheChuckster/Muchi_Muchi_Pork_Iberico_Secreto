@@ -1132,26 +1132,11 @@ fx_rsx:
   mov.l FX_LARD,r0
   mov #104,r1
   mov.w r1,@(r0,r12)
-; cancel every enemy bullet into a 10000 medal (as many as there is room for)
-  mov.l FX_BPOOL,r8
-  mov.l FX_BCNT,r0
-  mov.l @r0,r9
-fx_bl:
-  mov.l @r8,r0
-  tst r0,r0
-  bt fx_bn
-  mov.l @(32,r8),r4
-  mov.l @(36,r8),r5
-  mov #0,r0
-  mov.l r0,@r8
-  bsr spawn10k
-  nop
-fx_bn:
-  dt r9
-  bf/s fx_bl
-  add #92,r8
+; for the next 60 steps every enemy bullet becomes a 10000 medal (Manpuku volleys included)
+  mov.l FX_SWIN,r1
+  mov #60,r0
   bra fx_juggle
-  nop
+  mov.l r0,@r1
 ; ---- during Fever: count down 10 per step; a hit ends it ----
 fx_infev:
   mov.b @r12,r0
@@ -1187,8 +1172,17 @@ fx_fevend:
 ; and 90 steps of grace cover the fade (mpkman puts the normal attacks back)
   mov.l FX_CHAIN,r1
   mov.l r0,@r1
+  mov.l FX_SWIN,r1
+  mov.l r0,@r1
+  mov.l FX_FBUF,r1
+  mov #96,r2
+fx_fclr:
+  mov.l r0,@r1
+  dt r2
+  bf/s fx_fclr
+  add #4,r1
   mov.l FX_FADE,r1
-  mov #8,r0
+  mov #60,r0
   mov.l r0,@r1
   mov.l FX_GRACE,r1
   mov #90,r0
@@ -1201,46 +1195,8 @@ fx_dec:
 fx_juggle:
   bsr mpkman
   nop
-; ---- bullet fade after Fever: bullets stop, flash and fade, then vanish ----
-  mov.l FX_FADE,r1
-  mov.l @r1,r0
-  tst r0,r0
-  bt fx_nofade
-  add #-1,r0
-  mov.l r0,@r1
-  mov r0,r3
-  mov r0,r2
-  shll2 r2
-  shll2 r2
-  add r2,r2
-  add #31,r2
-  mov r2,r6
-  shll8 r6
-  or r2,r6
-  mov.l FX_FCOL,r2
-  or r2,r6
-  mov.l FX_BPOOL,r4
-  mov.l FX_BCNT,r5
-  mov.l @r5,r5
-fx_fl:
-  mov.l @r4,r0
-  tst r0,r0
-  bt fx_fn
-  tst r3,r3
-  bf fx_fk
-  mov #0,r0
-  bra fx_fn
-  mov.l r0,@r4
-fx_fk:
-  mov #0,r0
-  mov.l r0,@(40,r4)
-  mov.l r0,@(44,r4)
-  mov.l r6,@(48,r4)
-fx_fn:
-  dt r5
-  bf/s fx_fl
-  add #92,r4
-fx_nofade:
+  bsr fxwin
+  nop
 ; r10 = beam on (lard form and lard shot firing)
   mov #0,r10
   mov.l @r12,r0
@@ -1342,9 +1298,17 @@ fx_beam:
   mov #64,r0
   add r0,r0
   cmp/hs r0,r9
-  bt fx_mn
+  bt fx_solo
   bsr medclone
   nop
+  bra fx_mn
+  nop
+; no room to split: the medal still pops up so every value change shows
+fx_solo:
+  mov r8,r4
+  mov #1,r5
+  bsr scatter
+  and r13,r5
 fx_mn:
   add #1,r11
   mov #100,r0
@@ -1379,7 +1343,7 @@ medclone:
   jsr @r0
   mov #1,r4
   tst r0,r0
-  bt mcl_out
+  bt mcl_solo
   mov.l FX_NEWIX,r0
   mov.l @r0,r5
   mov #120,r0
@@ -1419,6 +1383,14 @@ mcl_cp:
 mcl_out:
   lds.l @r15+,pr
   rts
+  nop
+; no free item slot: pop the medal itself
+mcl_solo:
+  mov r8,r4
+  mov #1,r5
+  bsr scatter
+  and r13,r5
+  bra mcl_out
   nop
 
 ; mpkman: Manpuku attacks while the FEVER counter is full or Fever is on; the mode is saved when they start
@@ -1574,6 +1546,8 @@ FX_GRACE: .long 0x0C04F86C
 FX_MPK: .long 0x0C04F874
 FX_FADE: .long 0x0C04F878
 FX_FCOL: .long 0x02040000
+FX_SWIN: .long 0x0C04F87C
+FX_FBUF: .long 0x0C04FC00
 FX_MODE1: .long 0x0C4EAC3C
 FX_MODE2: .long 0x0C48227F
 FX_MODE3: .long 0x0C516FDC
@@ -1608,6 +1582,98 @@ FX_IFLAG: .long 0xC0800004
 FX_O20A: .word 0x020A
 FX_NSLOT: .word 200
   .align 4
+
+; fxwin: the Fever start window (bullets -> pushed-up 10000 medals) and end window (bullets fade out)
+fxwin:
+  sts.l pr,@-r15
+; ---- Fever start window: every enemy bullet becomes a 10000 medal pushed upward ----
+  mov.l W_SWIN,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt fx_nosw
+  add #-1,r0
+  mov.l r0,@r1
+  mov.l W_BPOOL,r8
+  mov.l W_BCNT,r0
+  mov.l @r0,r9
+fx_bl:
+  mov.l @r8,r0
+  tst r0,r0
+  bt fx_bn
+  mov.l @(32,r8),r4
+  mov.l @(36,r8),r5
+  mov #0,r0
+  mov.l r0,@r8
+  bsr spawn10k
+  nop
+fx_bn:
+  dt r9
+  bf/s fx_bl
+  add #92,r8
+fx_nosw:
+; ---- Fever end window (60 steps): every enemy bullet, including new ones, stops, opens into a ring
+; and fades over 8 steps, then vanishes. Per-bullet step count in bytes at 0C04FC00 ----
+  mov.l W_FADE,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt fw_out
+  add #-1,r0
+  mov.l r0,@r1
+  mov.l W_BPOOL,r4
+  mov.l W_FBUF,r7
+  mov.l W_BCNT,r5
+  mov.l @r5,r5
+fx_fl:
+  mov.l @r4,r0
+  tst r0,r0
+  bf fx_fa
+  bra fx_fn
+  mov.b r0,@r7
+fx_fa:
+  mov.b @r7,r3
+  extu.b r3,r3
+  tst r3,r3
+  bf fx_ft
+  mov #8,r3
+fx_ft:
+  add #-1,r3
+  mov.b r3,@r7
+  tst r3,r3
+  bf fx_fk
+  mov #0,r0
+  bra fx_fn
+  mov.l r0,@r4
+fx_fk:
+  mov r3,r2
+  shll2 r2
+  shll2 r2
+  add r2,r2
+  add #31,r2
+  mov r2,r6
+  shll8 r6
+  or r2,r6
+  mov.l W_FCOL,r2
+  or r2,r6
+  mov #0,r0
+  mov.l r0,@(40,r4)
+  mov.l r0,@(44,r4)
+  mov.l r6,@(48,r4)
+fx_fn:
+  add #1,r7
+  dt r5
+  bf/s fx_fl
+  add #92,r4
+fw_out:
+  lds.l @r15+,pr
+  rts
+  nop
+  .align 4
+W_SWIN: .long 0x0C04F87C
+W_BPOOL: .long 0x0C4C371C
+W_BCNT: .long 0x0C5108FC
+W_FADE: .long 0x0C04F878
+W_FBUF: .long 0x0C04FC00
+W_FCOL: .long 0x02040000
 
 ; ---------- timer: find timed boss/midboss, draw seconds remaining ----------
 timer:
