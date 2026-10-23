@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Muchi Muchi Pork! Smoked Bacon (Cave CV1000) - patch build 38
+Muchi Muchi Pork! Smoked Bacon (Cave CV1000) - patch build 39
 
 Usage:
     python3 mmpork_patch.py mmpork.zip              -> writes bacon_u4 next to the zip
@@ -9,13 +9,13 @@ Usage:
     python3 mmpork_patch.py mmpork.zip -o OUT       -> writes the patched bacon_u4 to OUT
     python3 mmpork_patch.py u4                      -> a loose original u4 works too (no --zip)
 
-The original u4 must have CRC32 d06cfa42; the result is checked to be 739cc071.
+The original u4 must have CRC32 d06cfa42; the result is checked to be 6328c50c.
 Only the Python standard library is used.
 """
 import argparse, base64, os, sys, zipfile, zlib
 
 ORIG_CRC = 0xD06CFA42
-PATCHED_CRC = 0x739CC071
+PATCHED_CRC = 0x6328C50C
 U4_SIZE = 0x200000
 OUT_NAME = "bacon_u4"
 SET_NAME = "mmporkbcn.zip"
@@ -58,29 +58,29 @@ PATCHES = [
     "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"
-    "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"
+    "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"
-    "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"
+    "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"
+    "WCUAiQtgDhQmTwsACQAiT0YvVi8/0AtAAeT2ZfZkCCAkiTzQAmZmL3jgDiYaBzTQDDc60AInBeAB"
+    "FxLgAhcA4AMXSxdcFw0XDhd2LzDQC0BzZPZn9mR2LzDQC0AJABHQC0AJAAHlCSW3v/ZkJk8LAAkA"
     "SAzEVwQMRPgEDGj4BAxs+AQMdPgEDHj4BAIAAAQMfPhODDysSAx/IlEM3G8EDGD4Uwyk9AYMULQA"
     "AP//AgAAAAAAAIAAAP9/AAAOAgAAFAIEDDz4BAxA+FEMKAsEDDj4BAw0+AAAECdIDDwfSAz4HUgM"
     "OB5IDHgeSAz8HkgMPB9IDHwfTAwcN1EM/AgAAAAgUgxItigAAAAEDAD6CAxACwcMoPZMDOwkCAww"
-    "E4DABAAKAsgAIk8o0RJgCCAWif9wAiEA6jyIKQok2E+ZgmAIIAeJAOACKKgqA4mIVIlVXL8JABBJ"
-    "8o9ceEKwCQAd0RJgCCAtif9wAiEA6neIKQoX1DSVQmAIIB2JT1M4IwWLqCoCiwDgFqACJAjj/3M/"
-    "FDgjAosA4A6gAiQzYghCCEIsMh9yI2YYRismC9IrJgDgChQLFGwUEEXcj1x0AOoQsAkAJk8LAAkA"
-    "CQAEDHz4TAwcN1EM/AgEDHj4BAIAAAAGCQAiTw3YHpmCYAggDomBUAvREjAKiwrREjAHiQDgAiio"
-    "KgOJjFSNVQC/CQAMkAw4EEnpiyZPCwAJAE4M+MYNDAAADgwAAAABkACGL5Yvpi+2LyJPldoA4Aga"
+    "E4DABAAKAsgAIk8o0RJgCCAWif9wAiEA6niIKQok2E+ZgmAIIAeJAOACKKgqA4mIVIlVXb8JABBJ"
+    "8o9ceEKwCQAd0RJgCCAuif9wAiEA6jiSIDApChbUM5VCYAggHYlPUzgjBYuoKgKLAOAWoAIkCOP/"
+    "cz8UOCMCiwDgDqACJDNiCEIIQiwyH3IjZhhGKyYL0ismAOAKFAsUbBQQRdyPXHQA6g+wCQAmTwsA"
+    "CQAEDHz4TAwcN1EM/AgEDHj4BAIAAAAG7wAiTw3YHpmCYAggDomBUAvREjAKiwrREjAHiQDgAiio"
+    "KgOJjFSNVQG/CQAMkAw4EEnpiyZPCwAJAE4M+MYNDAAADgwAAAABkACGL5Yvpi+2LyJPldoA4Aga"
     "kdlg67w7kmAIIAmJkVGP2IJiKCIEiRAyKYlIePivCQBk4AwwDDkQS+2LidqoUAggAIsEGgDgBxqj"
     "UAggAYvZoAkAAOADGiDhE2ITYxNkE2WC1oPX5bAJACDhE2ITYxNkE2WA1oDX3LAJAMOgCQB42qRQ"
     "gDABiwHgCBqChQ1gngafhANig4WcA4NhDHERhQ1lWCUMiRBg/4gBiSAwBIsRhP+IBokwMASJDHHv"
@@ -178,8 +178,8 @@ MRA_TEMPLATE = """<!--
     <nvram index="3" size="135680"/>
 
     <rom index="0" zip="mmporkbcn.zip" md5="none">
-        <part name="bacon_u4" crc="739cc071"/>
-        <part name="bacon_u4" crc="739cc071"/>
+        <part name="bacon_u4" crc="6328c50c"/>
+        <part name="bacon_u4" crc="6328c50c"/>
     </rom>
 
     <buttons names="B1,B2,B3,B4,Start,Coin,Test,Service,Save State" default="A,B,X,Y,Start,R,L,Select"/>
@@ -218,7 +218,7 @@ def mra_text():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into bacon_u4 (Smoked Bacon, build 38)")
+    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into bacon_u4 (Smoked Bacon, build 39)")
     ap.add_argument("input", help="mmpork.zip or a loose original u4 file")
     ap.add_argument("-o", "--output", help="where to write bacon_u4")
     ap.add_argument("--zip", action="store_true", help="also write mmporkbcn.zip (input must be a zip)")

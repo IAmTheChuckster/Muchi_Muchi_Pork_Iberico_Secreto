@@ -49,8 +49,8 @@
     <nvram index="3" size="135680"/>
 
     <rom index="0" zip="mmporkbcn.zip" md5="none">
-        <part name="bacon_u4" crc="739cc071"/>
-        <part name="bacon_u4" crc="739cc071"/>
+        <part name="bacon_u4" crc="6328c50c"/>
+        <part name="bacon_u4" crc="6328c50c"/>
     </rom>
 
     <buttons names="B1,B2,B3,B4,Start,Coin,Test,Service,Save State" default="A,B,X,Y,Start,R,L,Select"/>
