@@ -10,7 +10,7 @@ emu.register_frame_done(function()
   autoplay(frame)
   sp:write_u8(B+0x203,2)
   if frame==10 then dbg=manager.machine.debugger; dbg:command('bpset 0c0d7510,1,{printf "REV"; g}'); dbg:command("go") end
-  if frame==9095 then sp:write_u32(0x0c04f834,10000) end
+  if frame==8500 then sp:write_u32(0x0c04f834,10000); sp:write_u32(0x0c04f86c,200) end
   if frame>=9100 and frame<9104 then d["P1 Button 3"]:set_value(1) elseif frame==9104 then d["P1 Button 3"]:clear_value() end
   if frame%300==0 and frame>=8400 then local c=count(); print(frame,"fev",sp:read_u32(0x0c04f838),"rvflag",sp:read_u32(0x0c04f888),"revenge calls in last 300f",c-c0); c0=c end
   if frame==10200 then manager.machine:exit() end

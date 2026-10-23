@@ -649,7 +649,8 @@ wrapper:
   mov #0,r0
   mov.l LW_SEL,r1
   mov.l r0,@r1
-; revenge bullets (enemies fire when destroyed): on in Manpuku as in the original, and during ARRANGE+ Fever
+; revenge bullets (enemies fire when destroyed): on in Manpuku as in the original, and in ARRANGE+ while the
+; FEVER counter is full or Fever is on
   mov.l LW_MODE,r1
   mov.l @r1,r0
   cmp/eq #1,r0
@@ -661,7 +662,12 @@ wrapper:
   mov.l LW_FEV,r1
   mov.l @r1,r0
   tst r0,r0
-  bt lw_rv0
+  bf lw_rv1
+  mov.l LW_CNT,r1
+  mov.l @r1,r0
+  mov.l LW_MAX,r1
+  cmp/hs r1,r0
+  bf lw_rv0
 lw_rv1:
   bra lw_rvs
   mov #1,r0
@@ -698,6 +704,8 @@ LW_MODE: .long 0x0C4EAC3C
 LW_ARR: .long 0x0C04F830
 LW_FEV: .long 0x0C04F838
 LW_RV: .long 0x0C04F888
+LW_CNT: .long 0x0C04F834
+LW_MAX: .long 10000
 
 ; ---------- ARRANGE HUD (1-player mode): "2p" becomes FEVER, the 2P score shows the counter (0C04F834), no 2P join ----------
 ahud:
