@@ -993,7 +993,7 @@ MC_POOL: .long 0x0C52B648
 MC_MAX: .long 10000
 MC_ORIG: .long 0x0C090000
 MC_FRAC: .long 0x0C04F854
-MC_ADD: .long 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100
+MC_ADD: .long 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200
 
 ; ---------- ARRANGE per-step effects (called from ahud): Fever start/countdown/end, medal juggling, 10000 medals pulled to the player ----------
 ; patch RAM: 0C04F834 counter, 0C04F838 fever flag, 0C04F83C last step, 0C04F840 last player state byte, 0C04FA00.. per-item split step (word x 200)
@@ -1005,6 +1005,25 @@ arrfx:
   mov.l r12,@-r15
   mov.l r13,@-r15
   sts.l pr,@-r15
+; bomb pressed during Fever (checked every frame, any bomb stock; the game skips its bomb check, and so
+; bombhook, when no bombs are held). Ignored for the first 11 steps of Fever so the starting press can't end it.
+  mov.l FX_FEV,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt fx_ne
+  mov.l FX_SWIN,r1
+  mov.l @r1,r0
+  mov #50,r1
+  cmp/hs r1,r0
+  bt fx_ne
+  mov.l FX_EDGE,r1
+  mov.b @r1,r0
+  tst #64,r0
+  bt fx_ne
+  mov.l FX_BREQ,r1
+  mov #1,r0
+  mov.l r0,@r1
+fx_ne:
 ; only once per game update step (not while paused)
   mov.l FX_STEP,r0
   mov.l @r0,r13
