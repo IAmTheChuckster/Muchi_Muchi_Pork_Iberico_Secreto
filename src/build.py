@@ -112,6 +112,9 @@ def patch_sites(ram):
         (0x0C0E2B64, 0x0C08FCC0, 'dbl_sb'),      #   small bomb collect
         (0x0C0E2B84, 0x0C08FF20, 'dbl_bb'),      #   big bomb collect
         (0x0C0E2BC4, 0x0C090000, 'medcol'),      # ARRANGE: medal collect -> FEVER counter
+        (0x0C078300, 0x6073C940, '0x6073D02A'),  # bomb check: mov r7,r0 / mov.l @(0C0783AC),r0
+        (0x0C078304, 0x20088949, '0x402B6073'),  #   jmp @r0 / mov r7,r0 (delay: r0 = buttons)
+        (0x0C0783AC, 0x00090009, 'bombhook'),    #   literal in unreachable padding after rts
         (0x0C06F994, 0x607288FF, '0xD0B8402B'),  # game loop skip test -> mov.l @(0C06FC78),r0 / jmp @r0
         (0x0C06F998, 0x8D6BEA00, '0x0009EA00'),  #   nop (delay slot); fevspeed decides skip or run
         (0x0C06FC78, 0x00090009, 'fevspeed'),    #   literal in padding after the literal pool  #   second part starts at row 15 (was 16)
@@ -121,7 +124,7 @@ def patch_sites(ram):
             assert rd(a) == old, hex(a)
     return sites
 
-FEVER_SPEED = 50   # game speed in Fever mode, percent of normal (100 = normal, 90 = 10% slower, 110 = 10% faster)
+FEVER_SPEED = 100   # game speed in Fever mode, percent of normal (100 = normal, 90 = 10% slower, 110 = 10% faster)
 MENU_COL = 23   # top line of the menu (text-layer column; game draws the mode name at column 20, row 11)
 MENU_ROW = 9
 ARROW = 0x3E
@@ -809,6 +812,46 @@ SP_SKIP: .long 0x0C06FA72
 SP_SPEED: .word FEVER_SPEED
   .align 4
 
+; ---------- ARRANGE+: bomb button check (jumped to from 0C078302; r0 = buttons, r8 = player). In ARRANGE+, when the
+; FEVER counter is full or Fever is on, C does not bomb: it sets the request flag 0C04F868 for arrfx instead.
+; Only r0/r1 are used (the game keeps values in r2-r9 across this check). ----------
+bombhook:
+  tst #64,r0
+  bt bh_none
+  mov.l BH_ARR,r1
+  mov.l @r1,r1
+  tst r1,r1
+  bt bh_bomb
+  mov.l BH_FEV,r1
+  mov.l @r1,r1
+  tst r1,r1
+  bf bh_req
+  mov.l BH_CNT,r1
+  mov.l @r1,r0
+  mov.l BH_MAX,r1
+  cmp/hs r1,r0
+  bf bh_bomb
+bh_req:
+  mov.l BH_REQ,r1
+  mov #1,r0
+  mov.l r0,@r1
+bh_none:
+  mov.l BH_NO,r0
+  jmp @r0
+  nop
+bh_bomb:
+  mov.l BH_YES,r0
+  jmp @r0
+  nop
+  .align 4
+BH_ARR: .long 0x0C04F830
+BH_FEV: .long 0x0C04F838
+BH_CNT: .long 0x0C04F834
+BH_MAX: .long 10000
+BH_REQ: .long 0x0C04F868
+BH_NO: .long 0x0C07839C
+BH_YES: .long 0x0C078308
+
 ; ---------- ARRANGE: medal value -> FEVER counter (wraps the medal collect handler 0C090000; r4 = player, r5 = item slot) ----------
 medcol:
   mov.l MC_ARR,r0
@@ -867,7 +910,7 @@ MC_POOL: .long 0x0C52B648
 MC_MAX: .long 10000
 MC_ORIG: .long 0x0C090000
 MC_FRAC: .long 0x0C04F854
-MC_ADD: .long 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100
+MC_ADD: .long 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500
 
 ; ---------- ARRANGE per-step effects (called from ahud): Fever start/countdown/end, medal juggling, 10000 medals pulled to the player ----------
 ; patch RAM: 0C04F834 counter, 0C04F838 fever flag, 0C04F83C last step, 0C04F840 last player state byte, 0C04FA00.. per-item split step (word x 200)
@@ -946,10 +989,12 @@ fx_rsx:
   mov.l FX_MAX,r2
   cmp/hs r2,r0
   bf fx_juggle
-  mov.l FX_EDGE,r1
-  mov.b @r1,r0
-  tst #64,r0
+  mov.l FX_BREQ,r1
+  mov.l @r1,r0
+  tst r0,r0
   bt fx_juggle
+  mov #0,r0
+  mov.l r0,@r1
   mov #1,r0
   mov.l r0,@r11
   mov.b @r12,r0
@@ -959,18 +1004,13 @@ fx_rsx:
   mov.l FX_LARD,r0
   mov #104,r1
   mov.w r1,@(r0,r12)
-; hide this C press from the game (no bomb)
-  mova FX_P1IN,r0
-  mov r0,r6
-  mov #6,r7
-  mov #-65,r4
-fx_cb:
-  mov.l @r6+,r2
-  mov.b @r2,r0
-  and r4,r0
-  mov.b r0,@r2
-  dt r7
-  bf fx_cb
+; Manpuku attacks during Fever: remember the mode and switch to Manpuku (1)
+  mov.l FX_MODE1,r1
+  mov.l @r1,r0
+  mov.l FX_SAVE,r2
+  mov.l r0,@r2
+  bsr fevrules
+  mov #1,r0
 ; cancel every enemy bullet into a 10000 medal (as many as there is room for)
   mov.l FX_BPOOL,r8
   mov.l FX_BCNT,r0
@@ -1000,20 +1040,36 @@ fx_infev:
   bt fx_nohit
   mov #0,r0
   mov.l r0,@r11
+  bsr fevrules
+  nop
   bra fx_juggle
   nop
 fx_nohit:
+; bomb pressed during Fever (the bomb itself was blocked by bombhook): Fever ends, counter 0, chain restarts
+  mov.l FX_BREQ,r1
+  mov.l @r1,r0
+  tst r0,r0
+  bt fx_nobomb
+  mov #0,r0
+  mov.l r0,@r1
+  mov.l FX_CNT,r1
+  bra fx_fevend
+  nop
+fx_nobomb:
   mov.l FX_CNT,r1
   mov.l @r1,r0
   mov #10,r2
   cmp/hi r2,r0
   bt fx_dec
+fx_fevend:
   mov #0,r0
   mov.l r0,@r1
   mov.l r0,@r11
-; Fever ran out: the medal chain starts over at 100
+; Fever over (ran out or bomb): the medal chain starts over at 100, normal attacks again
   mov.l FX_CHAIN,r1
   mov.l r0,@r1
+  bsr fevrules
+  nop
   bra fx_juggle
   nop
 fx_dec:
@@ -1188,18 +1244,36 @@ mcl_cp:
   mov.l FX_IVEL,r0
   jsr @r0
   mov r11,r4
-; send both halves off in random directions: up 1.5-6.5 px/frame, sideways -2.5..+2.5 px/frame
+; nudge the two halves apart: both up 0.5-2.5 px/frame, one left and one right at 0.5-1.5 px/frame
   mov.l @r15+,r4
   bsr scatter
-  nop
-  bsr scatter
+  mov #0,r5
   mov r8,r4
+  bsr scatter
+  mov #1,r5
 mcl_out:
   lds.l @r15+,pr
   rts
   nop
 
-; scatter: r4 = item. Random pop-up (+52 vertical speed) and sideways (+56) speed. Keeps r8-r13.
+; fevrules: Fever on -> set mode r0 (1 = Manpuku); Fever off -> put back the mode saved at Fever start
+fevrules:
+  mov.l FX_FEV,r1
+  mov.l @r1,r1
+  tst r1,r1
+  bf fr_set
+  mov.l FX_SAVE,r1
+  mov.l @r1,r0
+fr_set:
+  mov.l FX_MODE1,r1
+  mov.l r0,@r1
+  mov.l FX_MODE2,r1
+  mov.b r0,@r1
+  mov.l FX_MODE3,r1
+  rts
+  mov.b r0,@r1
+
+; scatter: r4 = item, r5 = 0 right / 1 left. Random pop-up (+52) and sideways (+56) speed. Keeps r8-r13.
 scatter:
   sts.l pr,@-r15
   mov.l r4,@-r15
@@ -1216,10 +1290,14 @@ scatter:
   jsr @r0
   nop
   mov.l @r15+,r4
-  mov.l FX_RMASK,r1
+  mov.l FX_HMASK,r1
   and r1,r0
   mov.l FX_HOFF,r1
-  sub r1,r0
+  add r1,r0
+  tst r5,r5
+  bt sc_r
+  neg r0,r0
+sc_r:
   mov.l r0,@(56,r4)
   lds.l @r15+,pr
   rts
@@ -1273,11 +1351,17 @@ s10_out:
   .align 4
 FX_STEP: .long 0x0C4857C4
 FX_RS: .long 0x0C04F844
+FX_BREQ: .long 0x0C04F868
+FX_MODE1: .long 0x0C4EAC3C
+FX_MODE2: .long 0x0C48227F
+FX_MODE3: .long 0x0C516FDC
+FX_SAVE: .long 0x0C04F860
 FX_CHAIN: .long 0x0C53F4A4
 FX_RAND: .long 0x0C06B450
-FX_RMASK: .long 0x0004FFFF
-FX_VMIN: .long 0x00018000
-FX_HOFF: .long 0x00028000
+FX_RMASK: .long 0x0001FFFF
+FX_VMIN: .long 0x00008000
+FX_HOFF: .long 0x00008000
+FX_HMASK: .long 0x0000FFFF
 FX_LARD: .long 0x0000020E
 FX_O214L: .long 0x00000214
 FX_LAST: .long 0x0C04F83C

@@ -19,10 +19,9 @@ I did all the testing and planning.
   - Harahara and Manpuku are unlocked, so the codes aren't needed.
 - **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with "ARRANGE+" shown under the hi-score.
   - One player only: 2P can't join, the 2P prompts are hidden, "2P" reads FEVER and the 2P score shows the FEVER counter.
-  - **Medal juggling.** Hitting a medal with the lard shot splits it into two medals one value step higher (100 → 200 → … → 10000), which fly off in random directions. Each medal splits at most once every 15 frames, up to 64 medals on screen.
-  - **FEVER counter.** Every medal collected adds 0.10% of its value (100 adds 0.1, 10000 adds 10), up to 10000. While the counter is full, every medal is a 10000 medal.
-  - **Fever mode.** With the counter at 10000, pressing bomb starts Fever instead of a bomb: the lard meter is filled, every enemy bullet turns into a 10000 medal, the counter counts down 10 per frame and every medal is a 10000 medal. Fever ends when you are hit (the counter stops where it was) or when the counter reaches 0, which also starts the medal chain over at 100.
-  - **Fever speed.** The game runs at 50% speed during Fever.
+  - **Medal juggling.** Hitting a medal with the lard shot splits it into two medals one value step higher (100 → 200 → … → 10000), which pop apart a little, one to each side. Each medal splits at most once every 15 frames, up to 64 medals on screen.
+  - **FEVER counter.** Every medal collected adds 0.5% of its value (100 adds 0.5, 10000 adds 50), up to 10000. While the counter is full, every medal is a 10000 medal.
+  - **Fever mode.** With the counter at 10000, pressing bomb starts Fever instead of a bomb: the lard meter is filled, every enemy bullet turns into a 10000 medal, enemies attack as in Manpuku, the counter counts down 10 per frame and every medal is a 10000 medal. Fever ends when you are hit (the counter stops where it was), when the counter reaches 0, or when you press bomb again (no bomb goes off and the counter goes to 0). When it runs out or you press bomb, the medal chain starts over at 100. Enemy attacks go back to normal when Fever ends.
   - **Extra bomb on respawn.** After losing a life you come back with one more bomb than you had when you were hit (up to 4), and never fewer than the game normally gives.
 - **V1.01+ mode.** Arcade with these changes: 
   - Pigs fill the lard meter twice as fast, and the lard shot lasts twice as long.
