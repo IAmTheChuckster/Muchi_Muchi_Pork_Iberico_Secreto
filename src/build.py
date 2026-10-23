@@ -118,6 +118,7 @@ def patch_sites(ram):
             assert rd(a) == old, hex(a)
     return sites
 
+FEVER_SPEED = 90   # game speed in Fever mode, percent of normal (100 = normal, 90 = 10% slower, 110 = 10% faster)
 MENU_COL = 23   # top line of the menu (text-layer column; game draws the mode name at column 20, row 11)
 MENU_ROW = 9
 ARROW = 0x3E
@@ -643,6 +644,9 @@ ah_on:
   mov.l AH_FX,r0
   jsr @r0
   nop
+  mov.l AH_SPD,r0
+  jsr @r0
+  nop
   lds.l @r15+,pr
 ; hide the 2P Start button (bit 0x80 of the P2 input copies)
   mova AH_P2IN,r0
@@ -736,6 +740,7 @@ ah_put:
   .align 4
 AH_ARR: .long 0x0C04F830
 AH_FX: .long arrfx
+AH_SPD: .long fevspeed
 AH_CNT: .long 0x0C04F834
 AH_C39: .long 0x0C484CEC
 AH_C38: .long 0x0C484C70
@@ -747,6 +752,46 @@ AH_BLANK: .long 0x80602020
 AH_P2IN: .long 0x0C481DF9, 0x0C481E39, 0x0C481E79, 0x0C481EFD, 0x0C481F3D, 0x0C481F7D
 AH_POW: .long 1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1
 AH_FTXT: .long 0x46455645, 0x52000000
+
+; ---------- Fever game speed: runs every frame. The game does (0C48A168 + 1) updates per frame (-1 = none),
+; so FEVER_SPEED percent is reached by an accumulator: each frame acc += speed, updates = acc / 100. ----------
+fevspeed:
+  mov.l SP_GSPD,r3
+  mov.l SP_FEV,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bt sp_norm
+  mov.l SP_PAUSE,r0
+  mov.b @r0,r0
+  tst r0,r0
+  bf sp_norm
+  mov.l SP_ACC,r1
+  mov.l @r1,r0
+  mov.w SP_SPEED,r2
+  add r2,r0
+  mov #-1,r2
+  mov #100,r4
+sp_div:
+  cmp/hs r4,r0
+  bf sp_set
+  sub r4,r0
+  bra sp_div
+  add #1,r2
+sp_set:
+  mov.l r0,@r1
+  rts
+  mov.l r2,@r3
+sp_norm:
+  mov #0,r0
+  rts
+  mov.l r0,@r3
+  .align 4
+SP_GSPD: .long 0x0C48A168
+SP_FEV: .long 0x0C04F838
+SP_PAUSE: .long 0x0C51091C
+SP_ACC: .long 0x0C04F850
+SP_SPEED: .word FEVER_SPEED
+  .align 4
 
 ; ---------- ARRANGE: medal value -> FEVER counter (wraps the medal collect handler 0C090000; r4 = player, r5 = item slot) ----------
 medcol:
@@ -1542,7 +1587,7 @@ def main():
     sites = patch_sites(open(RAM_DUMP, 'rb').read() if RAM_DUMP else None)
     cell_top = 0x0C483A50 + (MENU_COL * 30 + MENU_ROW) * 4
     dirty_bottom = 0x0C4EAC98 + (MENU_COL - 4) * 8
-    body = SRC.replace('CELL_TOP', hex(cell_top)).replace('DIRTY_BOTTOM', hex(dirty_bottom)).replace('#ARROW', f'#{ARROW}')
+    body = SRC.replace('CELL_TOP', hex(cell_top)).replace('DIRTY_BOTTOM', hex(dirty_bottom)).replace('#ARROW', f'#{ARROW}').replace('FEVER_SPEED', str(FEVER_SPEED))
     src = body + table_src() + warn_src() + '  .align 4\nsites:\n' + ''.join(f'  .long 0x{a:08x}, 0x{o:08x}, {t}\n' for a, o, t in sites) + '  .long 0\n'
     code, labels = Asm(RUN_BASE).assemble(src)
 
