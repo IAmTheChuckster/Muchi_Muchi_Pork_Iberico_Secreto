@@ -11,13 +11,13 @@ I did all the testing and planning.
 
 ## Patch Notes
 
-- **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, under the hi-score. It stops while the game is paused.
-- **Main-body health.** Shown under the timer and counts down to 0 when the part is destroyed.
+- **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, on the line under the hi-score. It stops while the game is paused. The game's mode name is no longer shown there in any mode.
+- **Main-body health bar.** A bar centred under the timer that shrinks as the main body takes damage: green when full, blue while it counts down, yellow at half or less, red with 15 health or less left.
 - **Title menu.** After a coin is inserted, or straight away on free play, the title shows **ARCADE / HARAHARA / MANPUKU / V1.01+ / ARRANGE+**.
   - Move the arrow with the joystick and press Start.
   - The arrow starts on ARCADE every time.
   - Harahara and Manpuku are unlocked, so the codes aren't needed.
-- **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with "ARRANGE+" shown under the hi-score and a FEVER bar under the 1P lives icon: blue while it fills (and while it drains in Fever), yellow when the counter is full, with FEVER READY flashing in yellow below it.
+- **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with a FEVER bar under the 1P lives icon: blue while it fills (and while it drains in Fever), yellow when the counter is full, with FEVER READY flashing in yellow below it.
   - One loop: after the last boss the ending plays and the game is over.
   - Score extends follow your DIP switch settings.
   - Two players can play. Fever, juggling and the FEVER counter follow player 1.
@@ -29,7 +29,6 @@ I did all the testing and planning.
   - Pigs fill the lard meter twice as fast, and the lard shot lasts twice as long.
   - Two loops, the second following the first whether or not you died or bombed; after loop 2 the ending plays.
   - Score extends follow your settings in every loop.
-  - "V1.01+" is shown under the hi-score during play.
   - Scores go to the Arcade high-score table.
   - The lard shot only fires while B is held. Letting go ends it straight away, with an empty or a full meter, and whatever is left in the lard meter is kept.
   - Power-up and bomb pickups count twice.
@@ -37,7 +36,7 @@ I did all the testing and planning.
 - **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/10/24 IBERICO SECRETO` (centred).
 - **Title screen.** `SALE BY AMI` is replaced with `NOT FOR SALE`.
 ## Patching the game
-You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24. Both patchers check the input and give identical files: `iberico_u4` (CRC `861939e8`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
+You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24. Both patchers check the input and give identical files: `iberico_u4` (CRC `1032b21e`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
 
 ### Web patcher
 1. Open the [web patcher](https://iamthechuckster.github.io/Muchi_Muchi_Pork_Iberico_Secreto/).

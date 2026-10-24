@@ -18,7 +18,7 @@ stop and wait.
 | u4 (original) | d06cfa42 | 2 MiB program NOR, 16-bit word-swapped |
 | u2 / u23 / u24 | 1ee961b8 / 4a4b36df / ce83d07b | copied unchanged |
 
-Output: `iberico_u4` (build 60: **861939e8**) inside `mmporkibc.zip` (u2, u23, u24, iberico_u4), and
+Output: `iberico_u4` (build 61: **1032b21e**) inside `mmporkibc.zip` (u2, u23, u24, iberico_u4), and
 `Muchi Muchi Pork! Iberico Secreto.mra` (setname mmporkibc; rom 1 u2 @0x34400000; rom 2 @0x3C800000
 u23 + 0x400000 zeros + u24 + 0x400000 zeros; nvram index 3 size 135680; rom 0 iberico_u4 listed twice).
 
@@ -52,7 +52,7 @@ u23 + 0x400000 zeros + u24 + 0x400000 zeros; nvram index 3 size 135680; rom 0 ib
 ## 3. Modes and features
 | Mode | Changes |
 |---|---|
-| All | Warning screen disclaimer, `HAVE FUN!!!`, bottom line `2026/10/24 IBERICO SECRETO` centred; title `NOT FOR SALE`; Harahara/Manpuku unlocked; menu ARCADE/HARAHARA/MANPUKU/V1.01+/ARRANGE+ in yellow; boss timers stop while paused. |
+| All | Warning screen disclaimer, `HAVE FUN!!!`, bottom line `2026/10/24 IBERICO SECRETO` centred; title `NOT FOR SALE`; Harahara/Manpuku unlocked; menu ARCADE/HARAHARA/MANPUKU/V1.01+/ARRANGE+ in yellow; boss timer on the line under the hi-score (column 37, no mode name in any mode) and a 64 px main-body health bar under it (column 36 rows 11-18; green full, blue, yellow at half, red at 15 or less; starting health kept at 0x0C04F898); boss timers stop while paused. |
 | V1.01+ | Lard fills twice as fast and lasts twice as long; releasing B ends the lard shot and keeps the meter; power-up and bomb pickups count double; no 40th-kill medal; two loops then the ending. |
 | ARRANGE+ | V1.01+ plus: one loop; 2P allowed; extends follow the DIP settings; extra bomb on respawn; medal juggling (a medal splits one value step as it enters the lard beam, halves pop up, max 64 medals); FEVER counter (0.3% of each medal's value, max 10000) shown as a 64 px bar under the 1P lives (blue, yellow when full, `FEVER READY` flashing below); full counter: all medals 10000, revenge bullets, a hit starts Fever; Fever (bomb with a full counter): bullets of both lists become 10000 medals that burst out and float during 4 s of 50% slow motion with no enemy fire, counter -10 per step, speed eases with the bullet count (99% .. 50%), revenge bullets; ends by hit or bomb (bullets -> 100 medals, no life lost) or by running out (bullets -> 10000 medals, 4 s of 50% slow motion); counter resets on a new game, kept on continue. |
 
