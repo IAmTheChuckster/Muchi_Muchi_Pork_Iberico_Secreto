@@ -99,7 +99,7 @@ def patch_sites(ram):
         (0x0C0965C0, 0xD30C6230, '0xD30C432B'),  # stage-side loop check: jmp @r3 (r3 = literal 0C0965F4)
         (0x0C0965C4, 0x22288B0B, '0x00098B0B'),  #   nop
         (0x0C0965F4, 0x0C515C4C, 'loopchk2'),    #   literal -> loopchk2
-        (0x0C070184, 0x0C077BD0, 'modelabel'),   # in-game mode name (column 37) -> shows V1.01 too
+        (0x0C070184, 0x0C077BD0, 'modelabel'),   # in-game mode name (column 37) -> nothing (timer moved there)
         (0x0C067AA8, 0x0C0E09A4, 'warntable'),   # warning screen: 12-line text table -> CAVE OWNS!!!
         (0x0C067AB4, 0x0C0DF658, 'datestr'),     # warning screen: date string -> the whole bottom line
         (0x0C0679D4, 0xD836E605, '0xD836E602'),  #   bottom line starts at column 2 (was 5): 26 chars centred in 30
@@ -598,54 +598,9 @@ L2_LOOP2: .long 0x0C0965E4
 
 ; ---------- in-game mode label (replaces the call at 0C0700DE to 0C077BD0: r4 = mode, r5 = column, r6 = row) ----------
 modelabel:
-  mov.l ML_FLAG,r0
-  mov.l @r0,r0
-  tst r0,r0
-  bt ml_orig
-  mov #30,r0
-  mulu.w r0,r5
-  sts macl,r1
-  add r6,r1
-  shll2 r1
-  mov.l ML_CELLS,r2
-  add r1,r2
-  mova ML_TXT,r0
-  mov r0,r3
-  mov.l ML_ARR,r0
-  mov.l @r0,r0
-  tst r0,r0
-  bt ml_v101
-  add #8,r3
-ml_v101:
-  mov.l ML_COLOR,r7
-  mov #8,r1
-ml_ch:
-  mov.b @r3+,r0
-  or r7,r0
-  mov.l r0,@r2
-  dt r1
-  bf/s ml_ch
-  add #4,r2
-  mov r5,r0
-  shll2 r0
-  add r0,r0
-  mov.l ML_DIRTY,r2
-  add r0,r2
-  mov #1,r0
+; in-game mode name (column 37): not drawn in any mode; the timer uses that line
   rts
-  mov.l r0,@r2
-ml_orig:
-  mov.l ML_ORIG,r0
-  jmp @r0
   nop
-  .align 4
-ML_FLAG: .long 0x0C04F828
-ML_CELLS: .long 0x0C483A50
-ML_COLOR: .long 0x60308000
-ML_DIRTY: .long 0x0C4EAC98
-ML_ORIG: .long 0x0C077BD0
-ML_ARR: .long 0x0C04F830
-ML_TXT: .long 0x56312E30, 0x312B2020, 0x41525241, 0x4E47452B
 
 ; ---------- wrapper: replaces calls to the text-layer redraw ----------
 wrapper:
@@ -2260,7 +2215,16 @@ clr_do:
   mov r1,r3
   mov r1,r4
   mov r1,r5
-  mov.l LT_CELL1,r6
+  mov.l LT_CELLB,r6
+  mov.l LT_DIRTY1,r7
+  bsr draw
+  nop
+  mov #32,r1
+  mov r1,r2
+  mov r1,r3
+  mov r1,r4
+  mov r1,r5
+  mov.l LT_CELLB2,r6
   mov.l LT_DIRTY1,r7
   bsr draw
   nop
@@ -2433,59 +2397,87 @@ hnext:
   mov.l @(24,r10),r0
   mov.l @(28,r10),r2
   cmp/eq r0,r2
-  bt hp_digits
-  mov #32,r1
-  mov r1,r2
-  mov r1,r3
-  mov r1,r4
-  mov r1,r5
-  mov.l LT_CELL1,r6
-  mov.l LT_DIRTY1,r7
-  bsr draw
-  nop
-  bra hp_done
-  nop
+  bt hp_bar
+; no boss part: blank the 8 bar cells
+  mov #0,r4
+  bra hp_draw
+  mov #0,r5
 hp_have:
+; remember the part's starting health (new enemy entry, or a higher value)
   mov.l @(24,r10),r0
+  mov.l @(28,r10),r2
   mov.l r0,@(28,r10)
-hp_digits:
-  mov r3,r4
-  bsr div10
-  nop
-  mov r0,r6
-  bsr div10
-  nop
-  mov r0,r5
-  mov #48,r0
+  mov.l LT_HPMAX,r6
+  cmp/eq r0,r2
+  bf hp_newmax
+  mov.l @r6,r2
+  cmp/hi r2,r3
+  bf hp_bar
+hp_newmax:
+  mov.l r3,@r6
+hp_bar:
+; health bar: r3 health, r2 starting health, r4 = 64 * health / start (pixels)
+  mov.l LT_HPMAX,r6
+  mov.l @r6,r2
+  mov #0,r4
+  tst r2,r2
+  bt hp_col
+  mov r3,r1
+  shll2 r1
+  shll2 r1
+  shll2 r1
+  mov #64,r5
+hp_div:
+  cmp/hs r2,r1
+  bf hp_div_e
+  sub r2,r1
+  add #1,r4
+  dt r5
+  bf hp_div
+hp_div_e:
   tst r4,r4
-  bt hp_h_sp
-  mov r4,r2
-  add r0,r2
-  bra hp_h_ok
-  nop
-hp_h_sp:
-  mov #32,r2
-hp_h_ok:
-  tst r4,r4
-  bf hp_t_dig
-  tst r5,r5
-  bt hp_t_sp
-hp_t_dig:
-  add r0,r5
-  bra hp_t_ok
-  nop
-hp_t_sp:
-  mov #32,r5
-hp_t_ok:
-  add r0,r6
-  mov r5,r3
-  mov r6,r4
-  mov #32,r1
-  mov #32,r5
-  mov.l LT_CELL1,r6
+  bf hp_col
+  tst r3,r3
+  bt hp_col
+  mov #1,r4
+hp_col:
+; red at 15 or less, yellow at half or less, green when full, blue in between
+  mov.l LT_HRED,r5
+  mov #15,r0
+  cmp/hi r0,r3
+  bf hp_draw
+  mov.l LT_HYEL,r5
+  mov r3,r0
+  add r0,r0
+  cmp/hi r2,r0
+  bf hp_draw
+  mov.l LT_HGRN,r5
+  cmp/hs r2,r3
+  bt hp_draw
+  mov.l LT_HBLU,r5
+hp_draw:
+  mov.l LT_CELLB,r6
+  mov #8,r7
+hp_cell:
+  mov #32,r0
+  cmp/pl r4
+  bf hp_put
+  mov #8,r1
+  cmp/ge r1,r4
+  bt/s hp_put
+  mov #23,r0
+  mov r4,r0
+  add #15,r0
+hp_put:
+  or r5,r0
+  mov.l r0,@r6
+  add #4,r6
+  add #-8,r4
+  dt r7
+  bf hp_cell
   mov.l LT_DIRTY1,r7
-  bsr draw
-  nop
+  mov #1,r0
+  mov.l r0,@r7
 hp_done:
   mov.l LT_STATE,r10
   mov #1,r0
@@ -2545,10 +2537,16 @@ LT_TABLE: .long enemy_table
 LT_STATE: .long 0x0C04F800
 LT_DIV6: .long 0x0000AAAB
 LT_DIV10: .long 0x0000CCCD
-LT_CELL0: .long 0x0C484B60
-LT_DIRTY0: .long 0x0C4EADB8
-LT_CELL1: .long 0x0C484AE8
-LT_DIRTY1: .long 0x0C4EADB0
+LT_CELL0: .long 0x0C484BD8   ; timer: column 37 (under the hi-score), rows 12-16
+LT_DIRTY0: .long 0x0C4EADC0
+LT_CELLB2: .long 0x0C484B68  ; health bar rows 14-18 (clearing)
+LT_CELLB: .long 0x0C484B5C   ; health bar: column 36, rows 11-18 (centred under the timer)
+LT_HPMAX: .long 0x0C04F898   ; patch RAM: starting health of the current boss part
+LT_HGRN: .long 0x20802000
+LT_HBLU: .long 0x20408000
+LT_HYEL: .long 0x80800000
+LT_HRED: .long 0x80201000
+LT_DIRTY1: .long 0x0C4EADB8
 LT_MAINBIT: .long 0x00008000
 LT_COLOR: .long 0x80808000
 LT_FCOUNT: .long 0x0C4857C4   ; gameplay update-step counter (stops while paused); was 0C516FD0
