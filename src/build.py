@@ -2201,6 +2201,19 @@ keep16:
 clr_do:
   mov #0,r0
   mov.l r0,@(12,r10)
+; fight over: forget the shown part and all remembered part health
+  mov.l LT_HPCUR,r1
+  mov.l r0,@r1
+  mov.l LT_HPHOLD,r1
+  mov.l r0,@r1
+  mov.l LT_HPST,r1
+  mov #96,r2
+  add r2,r2
+clr_hp:
+  mov.l r0,@r1
+  add #4,r1
+  dt r2
+  bf clr_hp
   mov #32,r1
   mov r1,r2
   mov r1,r3
@@ -2345,23 +2358,73 @@ t_ok:
   mov.l LT_DIRTY0,r7
   bsr draw
   nop
-; ---- health: sum slot+0x44 of this enemy's listed parts
+; ---- health bar: one bar for the boss part being hit
+; every slot of this enemy keeps its starting health (HPST, word per slot) and last health (HPST+384);
+; a slot whose health dropped this frame becomes the shown part (HPCUR); otherwise the first main-body
+; part of the list is shown (HPDEF). HPCUR/HPDEF hold the slot's HPST address.
   mov.l LT_STATE,r10
   mov.l @(24,r10),r7
   add #4,r7
   mov.l @r8,r2
-  mov #0,r3
   mov #0,r1
+  mov.l LT_HPDEF,r6
+  mov.l r1,@r6
+  mov.l LT_HPHOLD,r6
+  mov.l @r6,r0
+  tst r0,r0
+  bt hhz
+  add #-1,r0
+  mov.l r0,@r6
+hhz:
   mov.l LT_ENEMY,r4
+  mov.l LT_HPST,r11
   mov #96,r5
   add r5,r5
 hloop:
   mov.l @r4,r0
   tst r0,r0
-  bt hnext
+  bt hclr
   mov.l @(4,r4),r0
   cmp/eq r2,r0
-  bf hnext
+  bf hclr
+  mov #68,r0
+  mov.w @(r0,r4),r3
+  cmp/pz r3
+  bt hpos
+  mov #0,r3
+hpos:
+  mov.w @r11,r0
+  extu.w r0,r0
+  cmp/hi r0,r3
+  bf hst_ok
+  mov.w r3,@r11
+hst_ok:
+  mov #96,r0
+  shll2 r0
+  mov.w @(r0,r11),r6
+  extu.w r6,r6
+  mov.w r3,@(r0,r11)
+  cmp/hi r3,r6
+  bf hnohit
+; hit: stay on the shown part while it keeps being hit (HPHOLD steps), switch when it rests or is gone
+  mov.l LT_HPCUR,r6
+  mov.l @r6,r0
+  cmp/eq r11,r0
+  bt hhold
+  mov.l LT_HPHOLD,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bf hnohit
+  mov.l r11,@r6
+hhold:
+  mov.l LT_HPHOLD,r6
+  mov #30,r0
+  tst r3,r3
+  bf hhold2
+  mov #0,r0
+hhold2:
+  mov.l r0,@r6
+hnohit:
   mov.b @(15,r4),r0
   mov r0,r6
   mov r7,r9
@@ -2371,7 +2434,6 @@ hcmp:
   bt hnext
   cmp/eq r6,r0
   bf hcmp
-hadd:
   mov.w @(10,r8),r0
   extu.w r0,r0
   tst r0,r0
@@ -2381,12 +2443,29 @@ hadd:
   bt hnext
 hok:
   add #1,r1
-  mov #68,r0
-  mov.w @(r0,r4),r0
-  cmp/pz r0
+  mov.l LT_HPDEF,r6
+  mov.l @r6,r0
+  tst r0,r0
   bf hnext
-  add r0,r3
+  bra hnext
+  mov.l r11,@r6
+hclr:
+; not this enemy: forget the slot
+  mov #0,r6
+  mov.w r6,@r11
+  mov #96,r0
+  shll2 r0
+  mov.w r6,@(r0,r11)
+  mov.l LT_HPCUR,r6
+  mov.l @r6,r0
+  cmp/eq r11,r0
+  bf hnext
+  mov #0,r0
+  mov.l r0,@r6
+  mov.l LT_HPHOLD,r6
+  mov.l r0,@r6
 hnext:
+  add #2,r11
   mov #100,r0
   add r0,r0
   add r0,r4
@@ -2403,23 +2482,28 @@ hnext:
   bra hp_draw
   mov #0,r5
 hp_have:
-; remember the part's starting health (new enemy entry, or a higher value)
   mov.l @(24,r10),r0
-  mov.l @(28,r10),r2
   mov.l r0,@(28,r10)
-  mov.l LT_HPMAX,r6
-  cmp/eq r0,r2
-  bf hp_newmax
-  mov.l @r6,r2
-  cmp/hi r2,r3
-  bf hp_bar
-hp_newmax:
-  mov.l r3,@r6
 hp_bar:
-; health bar: r3 health, r2 starting health, r4 = 64 * health / start (pixels)
-  mov.l LT_HPMAX,r6
-  mov.l @r6,r2
+; r9 = shown part (hit part, else main body); r3 health, r2 starting health, r4 = 64 * health / start
+  mov.l LT_HPCUR,r6
+  mov.l @r6,r9
+  tst r9,r9
+  bf hp_sel
+  mov.l LT_HPDEF,r6
+  mov.l @r6,r9
+hp_sel:
+  mov #0,r3
+  mov #0,r2
   mov #0,r4
+  tst r9,r9
+  bt hp_col
+  mov.w @r9,r2
+  extu.w r2,r2
+  mov #96,r0
+  shll2 r0
+  mov.w @(r0,r9),r3
+  extu.w r3,r3
   tst r2,r2
   bt hp_col
   mov r3,r1
@@ -2541,7 +2625,10 @@ LT_CELL0: .long 0x0C484BD8   ; timer: column 37 (under the hi-score), rows 12-16
 LT_DIRTY0: .long 0x0C4EADC0
 LT_CELLB2: .long 0x0C484B68  ; health bar rows 14-18 (clearing)
 LT_CELLB: .long 0x0C484B5C   ; health bar: column 36, rows 11-18 (centred under the timer)
-LT_HPMAX: .long 0x0C04F898   ; patch RAM: starting health of the current boss part
+LT_HPCUR: .long 0x0C04F898   ; patch RAM: shown boss part (its HPST address), 0 = main body
+LT_HPDEF: .long 0x0C04F89C   ; patch RAM: main-body part this frame
+LT_HPHOLD: .long 0x0C04F8A0  ; patch RAM: steps left before the bar may switch to another part
+LT_HPST: .long 0x0C04FD00    ; patch RAM: starting health per enemy slot (word x 192), last health at +384
 LT_HGRN: .long 0x20802000
 LT_HBLU: .long 0x20408000
 LT_HYEL: .long 0x80800000

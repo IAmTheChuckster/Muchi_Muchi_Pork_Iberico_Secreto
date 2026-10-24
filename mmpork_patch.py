@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Muchi Muchi Pork! Iberico Secreto (Cave CV1000) - patch build 61
+Muchi Muchi Pork! Iberico Secreto (Cave CV1000) - patch build 62
 
 Usage:
     python3 mmpork_patch.py mmpork.zip              -> writes iberico_u4 next to the zip
@@ -9,13 +9,13 @@ Usage:
     python3 mmpork_patch.py mmpork.zip -o OUT       -> writes the patched iberico_u4 to OUT
     python3 mmpork_patch.py u4                      -> a loose original u4 works too (no --zip)
 
-The original u4 must have CRC32 d06cfa42; the result is checked to be 1032b21e.
+The original u4 must have CRC32 d06cfa42; the result is checked to be f76a2ef8.
 Only the Python standard library is used.
 """
 import argparse, base64, os, sys, zipfile, zlib
 
 ORIG_CRC = 0xD06CFA42
-PATCHED_CRC = 0x1032B21E
+PATCHED_CRC = 0xF76A2EF8
 U4_SIZE = 0x200000
 OUT_NAME = "iberico_u4"
 SET_NAME = "mmporkibc.zip"
@@ -25,8 +25,8 @@ MRA_NAME = "Muchi Muchi Pork! Iberico Secreto.mra"
 PATCHES = [
     (0x1C4, base64.b64decode("H4AAAA==")),
     (0x1F0000, base64.b64decode(
-    "BdEG0gbTFmACIhBD+48EcgTQK0AJAAkAH4AAAAQMAMAAAFgGBAwowAzRGZIA4AIhEEL8jwRxB9RG"
-    "YRghBolGZUZmEmJQMveL9q9iIQLQK0AJAAkABAx81wYM0AMEDAD4AAIJAAHgA9ECIQPRAiED0CtA"
+    "BdEG0gbTFmACIhBD+48EcgTQK0AJAAkAH4AAAAQMAMAAAH8GBAwowAzRGZIA4AIhEEL8jwRxB9RG"
+    "YRghBolGZUZmEmJQMveL9q9iIQLQK0AJAAkABAwY2AYM0AMEDAD4AAIJAAHgA9ECIQPRAiED0CtA"
     "CQBIDKwkTgxArAYMcBAl0RJjM2Ul0iBgA2IByAOJ/3MRQwCJAOMjYALIBIkBcwTgBzMAiwTjMiEA"
     "4iLWLdczYAOIAYkEiAKLAeIf1irXJdByIBvQIiAA4iEQM2AEiCkCItAiIBrQYiAa0GIgMDUCiRDQ"
     "C0Al5B3RE+IA4AIhEEL8jwRxCtoH0RJgAYgEiQKIBYkI0CtACQAI0CtACQAH0CtACQAJAAQMJPhI"
@@ -95,50 +95,53 @@ PATCHES = [
     "kAI5649ceCZPCwAJAJNiRJACOQOLQpACOQCLPZCDYwFyAjItiVxzMmEYIfiLg2QzZRfmRmESJRBG"
     "+48EdTNnQHcB4AInOlQ7VUNmbDZMNmNhCEEcMRw2++EcRlNn/eEcR3g2ahNTZmw2XDZjYQhBHDEc"
     "NvvhHEZDZ/3hHEd8NmsTCwAJAAQMNPgAABAnBAw4+AQMhPhMDBw3AAaAAQACCQCGL5Yvpi+2LyJP"
-    "pNoA4AgaoNlg67w7kmAIIAmJkVGe2IJiKCIEiRAyMolIePivCQBk4AwwDDkQS+2LmNqoUAggAIsE"
-    "GgDgBxqjUAggAYv4oAkAAOADGiDhE2ITYxNkE2WR1pLXBLEJACDhE2ITYxNkE2WQ1pXX+7AJACDh"
-    "E2ITYxNkE2WK1pHX8rAJANmgCQCC2qRQgDABiwHgCBqChQ1gngafhANig4WcA4NhDHERhQ1lWCUM"
-    "iRBg/4gBiSAwBIsRhP+IBokwMASJDHHvrwkArq8JAHHaFhqEhQggColv2n3QAmekUIAwAYmEGnUa"
-    "pVBzZgg2U2FoMRFBA4mEhQgglokA4WbQDiEaASlBCUETZJ6wCQADZ5uwCQADZpiwCQADYkNjMOA4"
-    "IwKJDDMBoAkAIOMg4RAzAYsoIgKJDDIBoAkAIOIMNgw3M2FjYy7kc2VV1lbXjLAJAFDaplcEd4Ji"
-    "AOMA4UvUYOVcNUJgCCAXiUFQIDAUi0+EA2ZzaZRg/4gOiWAw+ouFhQ1gCCACiUJmCCYFiQFxROBN"
-    "ABFAAIsMM2TgDDAMNBBF34sYIQaLplCnUgAyDIkA5CygAOWmUKdSBxo91gAyAotiYiYzAIsyJjnW"
-    "YmIA5CgiD4kzYQhBCEEIQUDlIjEDiygxAXQQRfmLSCQCizgjAIkB5DPVD+AGMwiLMNUzYAwwJjAD"
-    "iyvVIjMAiSvVJ9YI5yDgFUQFiwjhEzQCjRfgQ2APcFsgAiYEdvh0EEfwiyXXAeACJxfaAeADGiZP"
-    "9mv2avZp9mgLAAkAFNFDYh4iGgEpQQlBAUETYAhAHDAMMENiCDITZAsAI2AY0AshEiYLIiEWCyMy"
-    "FgskQxYLJVQWAeALAAInwADIALQARABLDJx8BAxo0gQMAPgAAKuqAADNzEgM2EtODMCtSAxoS0gM"
-    "XEsEDJj4gCAAIEAgAICAgAAAIIAAEE4MuK0AAACAgIAAgEgMxFcKDCDfmAC0AAAAAAD/ABAO/w3/"
-    "//////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDPAS"
-    "mAC0AAAAAAD/ABAO/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8A"
-    "AAAA//////////8LDPCfmAC0AAAAAAABADAq/wD///////8AAAAA//////////8AAAAA////////"
-    "//8AAAAA//////////8AAAAA//////////8LDDDTVAC0AAAAAAABAKQfMzL///////8DADAqIyIl"
-    "JP////8FACAc/wX///////8AAAAA//////////8AAAAA//////////8MDLAcmAC0AAAAAAABADAq"
-    "/wD///////8BASAc/wH///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8M"
-    "DLBnVAC0AAAAAAABAKQf/z7///////8DADAq/zD///////8FACAc/wD///////8AAAAA////////"
-    "//8AAAAA//////////8MDKC5mAC0AAAAAAABABAO/zj///////8DADAq/xr///////8FADAq/wD/"
-    "//////8CKjAq/yr///////8AAAAA//////////8KDMD5mAC0AAEAAAABAAUM/wD///////8AAAAA"
-    "//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDHAvmAC0AAEAAIAB"
-    "ABIM/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA////////"
-    "//8LDFBLmAC0AAEAAAABAFAK/wD///////8AAAAA//////////8AAAAA//////////8AAAAA////"
-    "//////8AAAAA//////////8LDFCAmAC3AAEAAAABAB4P/wD///////8AAAAA//////////8AAAAA"
-    "//////////8AAAAA//////////8AAAAA//////////8LDJBomAC0AAEAAAABACYW/wD///////8A"
-    "AAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAASFRTSVAg"
-    "T1JFSlRDSSAAUwAAAAAAAAAAAAAAAHAgAIBOVUZPSUZJQ0xBQSBETkkgIFNPTgBUAAAAAAAAcCAA"
-    "gEZBSUZJTFRBREVXIFRJLEhFIEROUk9FUwBEAABwIACAWUIgLFJPQSBUVU9ISVJFWiBEWUIAAAAA"
-    "AAAAAHAgAIBBQ0VWIC5MQSBMSVJIR1NUVCAgT0hUAEUAAAAAcCAAgFJPR0lOSUxBRyBNQSBFTkEg"
-    "RFRJAFMAAAAAAABwIACAU0FPU0lDVEFERUkgVE5MRUVMVENBVQBMAAAAAHAgAIBSUFBPUkVZVFIg"
-    "TUVJQSBOSVdIVAAAAAAAAAAAcCAAgEhUSUUgUkVSUFNDRUlURVZSIEdJVEgAUwAAAABwIACAT0hE"
-    "TFJFLlMAAAAAAAAAAAAAAAAAAAAAAAAAAHAgAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    "cCAAgCAgICAgIEFIRVZGIE5VISEgISAgICAgIAAAAAAgcAAQMDI2MjEvLzA0MkkgRUJJUk9DUyBD"
-    "RUVST1QAAAAAAABPTiBUT0YgUkFTRUwAAAAABgxM/AYMcBAEDNTDBgyc0gYMcBAEDGTABgxE0AcM"
-    "0HsEDHTBBgwEzxOLTtoTiwHQBgwIz6BgM8krQAkABgwMzwGIAo8EDIDACQwoCBB/AXEQfwfQCQws"
-    "CB1gaIgrQAkACQxICAkACQAEDPjBBwzIajJiKCId1CtEBwzMahCP827zbgkABwxAa1EMTFwEDNDC"
-    "CQzAZQzTMGIM0ytDCQzEZSgiC4sJAAuLCQz0ZVEMTFwEDIDDBwyEAQcM0HsEDNDDBgyoeg4MpAkE"
-    "DMzVBgy0eg0MWPYEDEzXBgzUeTbYBeY22ALmBgzEeg4MJAsEDGjXBgzUeTbYBeY22ATmBgwgeijU"
-    "EOYo1A/mBgw40A4MqA8EDGzXBwyohUwBE2BMAXPTBwyshSDJCCArQxNgBwx4hwkACQAEDCjCDgwk"
-    "KwgM4PgEDHTCDgxEKwgMAPwEDHrCDgxkKwgMwPwEDIDCDgyEKwgMIP8EDIbCDgzEKwkMAAAEDMDH"
-    "BwwAg3NgQMlzYCrQBwwEgwggSYkrQHNgBwysgwkACQAEDHTHBgyU+XJg/4i40CtABgyY+WuNAOoJ"
-    "AADqBwyYRQcM8N0EDBzHBwz8SAcM8N0EDBzHBgx4/AkACQAEDJjFDQwodU4MPKwEDIj4AAAAAA==")),
+    "yNoA4AgaxNlg67w7kmAIIAmJkVHC2IJiKCIEiRAyPYlIePivCQBk4AwwDDkQS+2LvNqoUAggAIsE"
+    "GgDgBxqjUAggAYtAoQkAAOADGrzRAiG90QIhvdFg4iwyAiEEcRBC+4sg4RNiE2MTZBNlsNaw10Gx"
+    "CQAg4RNiE2MTZBNlrta31zixCQAg4RNiE2MTZBNlqday1y+xCQAWoQkAodqkUIAwAYsB4AgagoUN"
+    "YJ4Gn4QDYoOFnAODYQxxEYUNZVglDIkQYP+IAYkgMASLEYT/iAaJMDAEiQxx768JAKOvCQCQ2hYa"
+    "hIUIIAqJjdqf0AJnpFCAMAGJhBp1GqVQc2YINlNhaDERQQOJhIUIIIuJAOGF0A4hGgEpQQlBE2Tb"
+    "sAkAA2fYsAkAA2bVsAkAA2JDYzDgOCMCiQwzAaAJACDjIOEQMwGLKCICiQwyAaAJACDiDDYMNzNh"
+    "Y2Mu5HNldNZ018mwCQBv2qZXBHeCYgDhdNYSJnTWYmAIIAGJ/3ACJmbUcttg5Vw1QmAIIDiJQVAg"
+    "MDWLROBNAxFDAIkA47FgDWAGMwCLMStg4AhAvQZtZjULNjYOi2LWYmCwMASJYtACYAggBouyJl/W"
+    "HuA4IwCLAOACJk+EA2ZzaZRg/4gciWAw+ouFhQ1gCCACiUJmCCYTiQFxU9ZiYAggDosNoLImAOZh"
+    "K2DgCEBlC03WYmCwMAOLAOACJkzWAiYCe2TgDDAMNBBFsIsYIQaLplCnUgAyBIkA5DKgAOWmUAca"
+    "QNZiaZgpAYs/1mJpAOMA4gDkmCkXiZFiLWJg4AhAnQM9YygiD4kzYQhBCEEIQUDlIjEDiygxAXQQ"
+    "RfmLSCQCizgjAIkB5DbVD+AGMwiLM9UzYAwwJjADiy7VIjMAiS7VJ9YI5yDgFUQFiwjhEzQCjRfg"
+    "Q2APcFsgAiYEdvh0EEfwiyjXAeACJxfaAeADGiZP9mv2avZp9mgLAAkAFNFDYh4iGgEpQQlBAUET"
+    "YAhAHDAMMENiCDITZAsAI2Ab0AshEiYLIiEWCyMyFgskQxYLJVQWAeALAAInwADIALQARABLDJx8"
+    "BAwE0wQMAPgAAKuqAADNzEgM2EtODMCtSAxoS0gMXEsEDJj4BAyc+AQMoPgEDAD9gCAAIEAgAICA"
+    "gAAAIIAAEE4MuK0AAACAgIAAgEgMxFcKDCDfmAC0AAAAAAD/ABAO/w3///////8AAAAA////////"
+    "//8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDPASmAC0AAAAAAD/ABAO/wD/"
+    "//////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDPCf"
+    "mAC0AAAAAAABADAq/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8A"
+    "AAAA//////////8LDDDTVAC0AAAAAAABAKQfMzL///////8DADAqIyIlJP////8FACAc/wX/////"
+    "//8AAAAA//////////8AAAAA//////////8MDLAcmAC0AAAAAAABADAq/wD///////8BASAc/wH/"
+    "//////8AAAAA//////////8AAAAA//////////8AAAAA//////////8MDLBnVAC0AAAAAAABAKQf"
+    "/z7///////8DADAq/zD///////8FACAc/wD///////8AAAAA//////////8AAAAA//////////8M"
+    "DKC5mAC0AAAAAAABABAO/zj///////8DADAq/xr///////8FADAq/wD///////8CKjAq/yr/////"
+    "//8AAAAA//////////8KDMD5mAC0AAEAAAABAAUM/wD///////8AAAAA//////////8AAAAA////"
+    "//////8AAAAA//////////8AAAAA//////////8LDHAvmAC0AAEAAIABABIM/wD///////8AAAAA"
+    "//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDFBLmAC0AAEAAAAB"
+    "AFAK/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA////////"
+    "//8LDFCAmAC3AAEAAAABAB4P/wD///////8AAAAA//////////8AAAAA//////////8AAAAA////"
+    "//////8AAAAA//////////8LDJBomAC0AAEAAAABACYW/wD///////8AAAAA//////////8AAAAA"
+    "//////////8AAAAA//////////8AAAAA//////////8AAAAASFRTSVAgT1JFSlRDSSAAUwAAAAAA"
+    "AAAAAAAAAHAgAIBOVUZPSUZJQ0xBQSBETkkgIFNPTgBUAAAAAAAAcCAAgEZBSUZJTFRBREVXIFRJ"
+    "LEhFIEROUk9FUwBEAABwIACAWUIgLFJPQSBUVU9ISVJFWiBEWUIAAAAAAAAAAHAgAIBBQ0VWIC5M"
+    "QSBMSVJIR1NUVCAgT0hUAEUAAAAAcCAAgFJPR0lOSUxBRyBNQSBFTkEgRFRJAFMAAAAAAABwIACA"
+    "U0FPU0lDVEFERUkgVE5MRUVMVENBVQBMAAAAAHAgAIBSUFBPUkVZVFIgTUVJQSBOSVdIVAAAAAAA"
+    "AAAAcCAAgEhUSUUgUkVSUFNDRUlURVZSIEdJVEgAUwAAAABwIACAT0hETFJFLlMAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAHAgAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcCAAgCAgICAgIEFIRVZG"
+    "IE5VISEgISAgICAgIAAAAAAgcAAQMDI2MjEvLzA0MkkgRUJJUk9DUyBDRUVST1QAAAAAAABPTiBU"
+    "T0YgUkFTRUwAAAAABgxM/AYMcBAEDNTDBgyc0gYMcBAEDGTABgxE0AcM0HsEDHTBBgwEzxOLTtoT"
+    "iwHQBgwIz6BgM8krQAkABgwMzwGIAo8EDIDACQwoCBB/AXEQfwfQCQwsCB1gaIgrQAkACQxICAkA"
+    "CQAEDPjBBwzIajJiKCId1CtEBwzMahCP827zbgkABwxAa1EMTFwEDNDCCQzAZQzTMGIM0ytDCQzE"
+    "ZSgiC4sJAAuLCQz0ZVEMTFwEDIDDBwyEAQcM0HsEDNDDBgyoeg4MpAkEDGjWBgy0eg0MWPYEDOjX"
+    "BgzUeTbYBeY22ALmBgzEeg4MJAsEDATYBgzUeTbYBeY22ATmBgwgeijUEOYo1A/mBgw40A4MqA8E"
+    "DAjYBwyohUwBE2BMAXPTBwyshSDJCCArQxNgBwx4hwkACQAEDCjCDgwkKwgM4PgEDHTCDgxEKwgM"
+    "APwEDHrCDgxkKwgMwPwEDIDCDgyEKwgMIP8EDIbCDgzEKwkMAAAEDMDHBwwAg3NgQMlzYCrQBwwE"
+    "gwggSYkrQHNgBwysgwkACQAEDHTHBgyU+XJg/4i40CtABgyY+WuNAOoJAADqBwyYRQcM8N0EDBzH"
+    "Bwz8SAcM8N0EDBzHBgx4/AkACQAEDJjFDQwodU4MPKwEDIj4AAAAAA==")),
 ]
 
 
@@ -194,8 +197,8 @@ MRA_TEMPLATE = """<!--
     <nvram index="3" size="135680"/>
 
     <rom index="0" zip="mmporkibc.zip" md5="none">
-        <part name="iberico_u4" crc="1032b21e"/>
-        <part name="iberico_u4" crc="1032b21e"/>
+        <part name="iberico_u4" crc="f76a2ef8"/>
+        <part name="iberico_u4" crc="f76a2ef8"/>
     </rom>
 
     <buttons names="B1,B2,B3,B4,Start,Coin,Test,Service,Save State" default="A,B,X,Y,Start,R,L,Select"/>
@@ -234,7 +237,7 @@ def mra_text():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into iberico_u4 (Iberico Secreto, build 61)")
+    ap = argparse.ArgumentParser(description="Patch Muchi Muchi Pork u4 into iberico_u4 (Iberico Secreto, build 62)")
     ap.add_argument("input", help="mmpork.zip or a loose original u4 file")
     ap.add_argument("-o", "--output", help="where to write iberico_u4")
     ap.add_argument("--zip", action="store_true", help="also write mmporkibc.zip (input must be a zip)")

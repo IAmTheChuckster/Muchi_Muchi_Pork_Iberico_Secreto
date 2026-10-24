@@ -12,7 +12,7 @@ I did all the testing and planning.
 ## Patch Notes
 
 - **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, on the line under the hi-score. It stops while the game is paused. The game's mode name is no longer shown there in any mode.
-- **Main-body health bar.** A bar centred under the timer that shrinks as the main body takes damage: green when full, blue while it counts down, yellow at half or less, red with 15 health or less left.
+- **Boss health bar.** A bar centred under the timer showing the health of the boss or midboss part you are hitting. Each part has its own full bar; the bar stays on a part while you keep hitting it and switches to another part after half a second without hits on it, or when the part is destroyed. Before you hit anything it shows the main body. Green when full, blue while it counts down, yellow at half or less, red with 15 health or less left.
 - **Title menu.** After a coin is inserted, or straight away on free play, the title shows **ARCADE / HARAHARA / MANPUKU / V1.01+ / ARRANGE+**.
   - Move the arrow with the joystick and press Start.
   - The arrow starts on ARCADE every time.
@@ -36,7 +36,7 @@ I did all the testing and planning.
 - **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/10/24 IBERICO SECRETO` (centred).
 - **Title screen.** `SALE BY AMI` is replaced with `NOT FOR SALE`.
 ## Patching the game
-You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24. Both patchers check the input and give identical files: `iberico_u4` (CRC `1032b21e`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
+You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24. Both patchers check the input and give identical files: `iberico_u4` (CRC `f76a2ef8`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
 
 ### Web patcher
 1. Open the [web patcher](https://iamthechuckster.github.io/Muchi_Muchi_Pork_Iberico_Secreto/).
