@@ -8,7 +8,8 @@ This repository holds only source, tools and notes. **No ROM data is included**;
 Why did I make this? Because it's fun and for my own personal research to see the capabilities of Claude.<br>
 While Claude was used I put effort in making sure there are balanced gameplay.<br>
 I did all the testing and planning.
-
+## Bugs
+1. **Arrange:* game freeze when with Muchi Muchi Pink during stage 1 mid boss while juggling medals
 ## To Do
 1. **Arrange:** see about adding a hitbox when the mode changes to manpuku
 2. **Arrange:** adjust fever mode timing to 30fps for the first 4 seconds
