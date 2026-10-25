@@ -11,7 +11,7 @@ I did all the testing and planning.
 
 ## To Do
 1. see about adding a hitbox when bullets are close or in fever mode
-2. adjust fever mode timing to 30fps when starting
+2. adjust fever mode timing to 30fps for the first 4 seconds
 
 ## Patch Notes
 - **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, on the line under the hi-score. It stops while the game is paused. The game's mode name is no longer shown there in any mode.
