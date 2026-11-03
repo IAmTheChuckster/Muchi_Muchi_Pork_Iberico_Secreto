@@ -1,6 +1,6 @@
 ## Muchi Muchi Pork! Ibérico Secreto
   
-A patch for **Muchi Muchi Pork!** (2007/ 4/17 MASTER VER.)<br>
+A patch for `Muchi Muchi Pork! (Japan, 2007/ 4/17 MASTER VER.)`<br>
 This repository holds only source, tools and notes. **No ROM data is included**; you patch your own legally owned dump.
 
 
