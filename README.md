@@ -57,6 +57,8 @@ python3 mmpork_patch.py mmpork.zip --zip --mra
 - **MAME:** MAME doesn't know the `mmporkibc` set, so make a copy of your mmpork set (keep the original safe), replace its u4 with `iberico_u4` renamed to `u4`, and run `mame mmpork`. MAME will warn about a wrong checksum; that is expected.
 - **MiSTer (CV1k core):** copy `mmporkibc.zip` to your `games/mame` folder and the `.mra` to `_Arcade`.
 
+## Skills
+
 ## Testing
 This patch was tested with MAME 0.289 and [CV1k core for the MiSTer FPGA by Raki](https://www.patreon.com/c/ikamusume/posts)<br>
 It may even work on a PCB but do so on your own risk.
