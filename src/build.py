@@ -2525,6 +2525,17 @@ hp_div_e:
   bt hp_col
   mov #1,r4
 hp_col:
+; boss parts other than the main body: always cyan
+  mov.l LT_HPDEF,r6
+  mov.l @r6,r0
+  cmp/eq r0,r9
+  bt hp_main
+  tst r9,r9
+  bt hp_main
+  mov.l LT_HCYN,r5
+  bra hp_draw
+  nop
+hp_main:
 ; red at 15 or less, yellow at half or less, green when full, blue in between
   mov.l LT_HRED,r5
   mov #15,r0
@@ -2633,6 +2644,7 @@ LT_HGRN: .long 0x20802000
 LT_HBLU: .long 0x20408000
 LT_HYEL: .long 0x80800000
 LT_HRED: .long 0x80201000
+LT_HCYN: .long 0x20708000
 LT_DIRTY1: .long 0x0C4EADB8
 LT_MAINBIT: .long 0x00008000
 LT_COLOR: .long 0x80808000

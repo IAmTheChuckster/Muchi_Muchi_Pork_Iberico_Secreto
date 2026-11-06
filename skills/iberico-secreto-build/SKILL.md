@@ -18,7 +18,7 @@ stop and wait.
 | u4 (original) | d06cfa42 | 2 MiB program NOR, 16-bit word-swapped |
 | u2 / u23 / u24 | 1ee961b8 / 4a4b36df / ce83d07b | copied unchanged |
 
-Output: `iberico_u4` (build 63: **eb77cd5f**) inside `mmporkibc.zip` (u2, u23, u24, iberico_u4), and
+Output: `iberico_u4` (build 64: **0fd4b1b1**) inside `mmporkibc.zip` (u2, u23, u24, iberico_u4), and
 `Muchi Muchi Pork! Iberico Secreto.mra` (setname mmporkibc; rom 1 u2 @0x34400000; rom 2 @0x3C800000
 u23 + 0x400000 zeros + u24 + 0x400000 zeros; nvram index 3 size 135680; rom 0 iberico_u4 listed twice).
 
