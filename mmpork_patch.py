@@ -147,7 +147,7 @@ PATCHES = [
 
 # MiSTer MRA (the iberico_u4 CRC is filled in from PATCHED_CRC when written)
 MRA_TEMPLATE = """<!--
-  ikacore_CV1k MRA - Muchi Muchi Pork! Iberico Secreto (2026/10/24 IBERICO).
+  ikacore_CV1k MRA - Muchi Muchi Pork! Iberico Secreto (2026/11/7 IBERICO).
   Converted from the community MRA (same set, zip names, CRCs and
   <about>) to the DDR3-direct delivery format, 2026-09-17.
 
@@ -176,9 +176,9 @@ MRA_TEMPLATE = """<!--
 -->
 <misterromdescription>
     <about author="ika-musume" source="https://github.com/ika-musume/ikacore_CV1k"/>
-    <name>Muchi Muchi Pork! Iberico Secreto (2026/10/24 IBERICO)</name>
+    <name>Muchi Muchi Pork! Iberico Secreto (2026/11/7 IBERICO)</name>
     <setname>mmporkibc</setname>
-    <year>2007</year>
+    <year>2026</year>
     <manufacturer>Cave</manufacturer>
     <category>Shooter</category>
     <rbf>ikacore_CV1k</rbf>
@@ -201,7 +201,7 @@ MRA_TEMPLATE = """<!--
         <part name="iberico_u4" crc="f76a2ef8"/>
     </rom>
 
-    <buttons names="B1,B2,B3,B4,Start,Coin,Test,Service,Save State" default="A,B,X,Y,Start,R,L,Select"/>
+    <buttons names="Rapid Shot,Lard Attack,Bombu,B4,Start,Coin,Test,Service,Save State" default="A,B,X,Y,Start,R,L,Select"/>
 </misterromdescription>
 """
 
