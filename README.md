@@ -9,14 +9,6 @@ Why did I make this? Because it's fun and for my own personal research to see th
 While Claude was used I put effort in making sure there are balanced gameplay.<br>
 I did all the testing and planning.
 
-
-## To Do
-1. **Arrange:** see about adding a hitbox when the mode changes to manpuku
-2. **Arrange:** adjust fever mode timing to 30fps for the first 4 seconds
-3. **Arrange:** drop a 1up object for each extra
-4. **ALL** draw a transparent box around the boss health
-5. Update MRA files to include button names
-
 ## Patch Notes
 - **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, on the line under the hi-score. It stops while the game is paused. The game's mode name is no longer shown there in any mode.
 - **Boss health bar.** A bar centred under the timer showing the health of the boss or midboss part you are hitting. Each part has its own full bar; the bar stays on a part while you keep hitting it and switches to another part after half a second without hits on it, or when the part is destroyed. Before you hit anything it shows the main body. On the main body it is green when full, blue while it counts down, yellow at half or less, red with 15 health or less left; on any other boss part it is always cyan.
