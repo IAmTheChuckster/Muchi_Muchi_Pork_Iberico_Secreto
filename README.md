@@ -58,6 +58,7 @@ python3 mmpork_patch.py mmpork.zip --zip --mra
 - **MiSTer (CV1k core):** copy `mmporkibc.zip` to your `games/mame` folder and the `.mra` to `_Arcade`.
 
 ## Skills
+This repo includes a Claude skill for building, testing and releasing the patch: [`skills/iberico-secreto-from-scratch/SKILL.md`](skills/iberico-secreto-from-scratch/SKILL.md). It lists the source layout, the build and patcher commands, the MAME test workflow and the known memory addresses.
 
 ## Testing
 This patch was tested with MAME 0.289 and [CV1k core for the MiSTer FPGA by Raki](https://www.patreon.com/c/ikamusume/posts)<br>
