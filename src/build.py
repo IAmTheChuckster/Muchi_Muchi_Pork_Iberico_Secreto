@@ -74,7 +74,7 @@ def warn_src():
     for t, c in zip(lines, colors):
         b = t.encode('ascii').ljust(28, b'\0')
         out += '  .long ' + ', '.join('0x%08x' % int.from_bytes(b[i:i + 4], 'big') for i in range(0, 28, 4)) + ', 0x%08x\n' % c
-    for name, text in (('datestr', '2026/10/24 IBERICO SECRETO'), ('verstr', ''), ('nfsstr', 'NOT FOR SALE')):
+    for name, text in (('datestr', '2026/11/7 IBERICO SECRETO'), ('verstr', ''), ('nfsstr', 'NOT FOR SALE')):
         b = text.encode('ascii') + b'\0'
         b = b.ljust((len(b) + 3) // 4 * 4, b'\0')
         out += name + ':\n  .long ' + ', '.join('0x%08x' % int.from_bytes(b[i:i + 4], 'big') for i in range(0, len(b), 4)) + '\n'

@@ -40,10 +40,10 @@ I did all the testing and planning.
   - The lard shot only fires while B is held. Letting go ends it straight away, with an empty or a full meter, and whatever is left in the lard meter is kept.
   - Power-up and bomb pickups count twice.
   - Small enemies no longer drop the extra medal every 40th kill; that drop is a power-up like the other drops.
-- **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/10/24 IBERICO SECRETO` (centred).
+- **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/11/7 IBERICO SECRETO` (centred).
 - **Title screen.** `SALE BY AMI` is replaced with `NOT FOR SALE`.
 ## Patching the game
-You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24. Both patchers check the input and give identical files: `iberico_u4` (CRC `f76a2ef8`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
+You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24. Both patchers check the input and give identical files: `iberico_u4` (CRC `eb77cd5f`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
 
 ### Web patcher
 1. Open the [web patcher](https://iamthechuckster.github.io/Muchi_Muchi_Pork_Iberico_Secreto/).
