@@ -8,7 +8,9 @@ This repository holds only source, tools and notes. **No ROM data is included**;
 Why did I make this? Because it's fun and for my own personal research to see the capabilities of Claude.<br>
 While Claude was used I put effort in making sure there are balanced gameplay.<br>
 I did all the testing and planning.
-
+## To Do:
+1. Slow the game to 30fps for 1 second when pressing hyper
+    
 ## Patch Notes
 - **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, on the line under the hi-score. It stops while the game is paused. The game's mode name is no longer shown there in any mode.
 - **Boss health bar.** A bar centred under the timer showing the health of the boss or midboss part you are hitting. Each part has its own full bar; the bar stays on a part while you keep hitting it and switches to another part after half a second without hits on it, or when the part is destroyed. Before you hit anything it shows the main body. On the main body it is green when full, blue while it counts down, yellow at half or less, red with 15 health or less left; on any other boss part it is always cyan.
