@@ -9,7 +9,7 @@ Why did I make this? Because it's fun and for my own personal research to see th
 While Claude was used I put effort in making sure there are balanced gameplay.<br>
 I did all the testing and planning.
 ## To Do:
-1. Slow the game to 30fps for 1 second when pressing hyper
+1. Slow the game to 30fps for 2 seconds when going into fever mode
     
 ## Patch Notes
 - **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, on the line under the hi-score. It stops while the game is paused. The game's mode name is no longer shown there in any mode.
