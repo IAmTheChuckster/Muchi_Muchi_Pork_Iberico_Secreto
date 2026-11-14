@@ -1,7 +1,7 @@
 """Build the patched Muchi Muchi Pork u4 (Smoked Bacon).
 
 Usage:
-    python3 build.py ORIGINAL_mmpork.zip OUT.zip [RAM_DUMP.bin]
+    python3 build.py ORIGINAL_mmpork.zip OUT.zip [RAM_DUMP.bin] --god GOD_PACKAGE(.zip|.7z)
 
 ORIGINAL_mmpork.zip must contain the original u4 (CRC d06cfa42). OUT.zip is the same set with u4 replaced.
 RAM_DUMP.bin is optional: a dump of main RAM 0C000000-0C1FFFFF taken after boot (from MAME). When given,
@@ -13,10 +13,17 @@ No ROM or RAM data is stored in this repository.
 import sys, os, struct, re, zipfile, zlib
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shasm import Asm
+import god_glyphs
 
-ORIG_ZIP = sys.argv[1]
-OUT_ZIP = sys.argv[2]
-RAM_DUMP = sys.argv[3] if len(sys.argv) > 3 else None
+_args = sys.argv[1:]
+GOD = None
+if '--god' in _args:
+    i = _args.index('--god')
+    GOD = _args[i + 1]
+    del _args[i:i + 2]
+ORIG_ZIP = _args[0] if _args else None
+OUT_ZIP = _args[1] if len(_args) > 1 else None
+RAM_DUMP = _args[2] if len(_args) > 2 else None
 
 ROM_OFF = 0x1F0000            # blank (0xFF) area in the program ROM where the patch is stored
 ROM_ADDR = 0x80000000 | ROM_OFF   # its address as seen by the CPU
@@ -44,7 +51,6 @@ ENEMIES = [
     (0x0C0B8050, 0x98, 0xB7, 1, [(0, 1, 3870, [0])]),                                      # stage 5 midboss A
     (0x0C0B6890, 0x98, 0xB4, 1, [(0, 1, 5670, [0])]),                                      # stage 5 midboss B
 ]
-ENTRY = 72   # handler(4) field(2) suboff(2) mode(2) hpmask(2) + 5 rules x 12 bytes
 # health only counts slots whose header (slot+0) has these bits set (0 = no requirement)
 HPMASK = {0x0C0B2F70: 0x8000}   # stage 4 midboss A: skip the undamageable second part-0 object
 
@@ -74,7 +80,7 @@ def warn_src():
     for t, c in zip(lines, colors):
         b = t.encode('ascii').ljust(28, b'\0')
         out += '  .long ' + ', '.join('0x%08x' % int.from_bytes(b[i:i + 4], 'big') for i in range(0, 28, 4)) + ', 0x%08x\n' % c
-    for name, text in (('datestr', '2026/11/7 IBERICO SECRETO'), ('verstr', ''), ('nfsstr', 'NOT FOR SALE')):
+    for name, text in (('datestr', '2026/11/14 IBERICO SECRETO'), ('verstr', ''), ('nfsstr', 'NOT FOR SALE')):
         b = text.encode('ascii') + b'\0'
         b = b.ljust((len(b) + 3) // 4 * 4, b'\0')
         out += name + ':\n  .long ' + ', '.join('0x%08x' % int.from_bytes(b[i:i + 4], 'big') for i in range(0, len(b), 4)) + '\n'
@@ -118,11 +124,9 @@ def patch_sites(ram):
         (0x0C078300, 0x6073C940, '0x6073D02A'),  # bomb check: mov r7,r0 / mov.l @(0C0783AC),r0
         (0x0C078304, 0x20088949, '0x402B6073'),  #   jmp @r0 / mov r7,r0 (delay: r0 = buttons)
         (0x0C0783AC, 0x00090009, 'bombhook'),    #   literal in unreachable padding after rts
-        (0x0C06F994, 0x607288FF, '0xD0B8402B'),  # game loop skip test -> mov.l @(0C06FC78),r0 / jmp @r0
-        (0x0C06F998, 0x8D6BEA00, '0x0009EA00'),  #   nop (delay slot); fevspeed decides skip or run
         (0x0C074598, 0x0C07DDF0, 'hithook'),     # ARRANGE+: player-hit call (tail jump) -> a hit in Fever ends Fever instead
         (0x0C0748FC, 0x0C07DDF0, 'hithook'),     #   second player-hit call
-        (0x0C06FC78, 0x00090009, 'fevspeed'),
+        (0x0C062748, 0x0C0616D0, 'fevnum'),      # list close: call before padding -> FEVER counter (build 66)
         (0x0C0D7528, 0x0C4EAC3C, '0x0C04F888'),  # revenge-bullet routine 0C0D74E0: its "mode == Manpuku" test reads our flag    #   literal in padding after the literal pool  #   second part starts at row 15 (was 16)
     ]
     if ram is not None:
@@ -130,7 +134,16 @@ def patch_sites(ram):
             assert rd(a) == old, hex(a)
     return sites
 
-FEVER_SPEED = 100   # unused: Fever speed follows the enemy bullet count (fevspeed)
+# ---- FEVER counter (build 66): the 360 version's digits, cut from the user's GOD package at patch time ----
+GLYPH_OFF = god_glyphs.GLYPH_FILE_OFF   # glyph pixels in the u4 (big-endian view); not shipped, written by the patchers
+GLYPH_ADDR = 0x80000000 | GLYPH_OFF
+FN_VX, FN_VY = 368, 136         # VRAM scratch: 5 slots, 24 px apart downwards, in the 64 px gap between the two
+                                # framebuffers (x 352-415): the game keeps no graphics there and never draws from it
+FN_XC, FN_YC = 277, 38          # counter in the framebuffer: centre y 42 from the top (under the 1P lives icon, which
+                                # ends at y 31); left-aligned, first digit at x 3 (FN_YC - 5 slots * 14 / 2), so the
+                                # 3 px glow reaches the screen's left edge
+FN_TINT_ORANGE = (0xC0, 0x68, 0x20)   # blitter tint (0x80 = unchanged)
+FN_TINT_GOLD = (0xA0, 0x98, 0x58)
 MENU_COL = 23   # top line of the menu (text-layer column; game draws the mode name at column 20, row 11)
 MENU_ROW = 9
 ARROW = 0x3E
@@ -304,9 +317,14 @@ menudraw:
   mova MENU_TXT,r0
   mov r0,r5
   mov.l LD_CELL,r2
-  mov.l LD_COLOR,r7
   mov #0,r4
 d_line:
+; build 65: the selected line is gold, the others white
+  mov.l LD_COLOR,r7
+  cmp/eq r3,r4
+  bt d_gold
+  mov.l LD_WHITE,r7
+d_gold:
   mov #32,r0
   cmp/eq r3,r4
   bf d_noarrow
@@ -344,6 +362,7 @@ d_ch:
 LD_SEL: .long 0x0C04F824
 LD_CELL: .long CELL_TOP
 LD_COLOR: .long 0x80800000
+LD_WHITE: .long 0x80808000
 LD_DIRTY: .long DIRTY_BOTTOM
 MENU_TXT: .long 0x41524341, 0x44452020, 0x48415241, 0x48415241, 0x4D414E50, 0x554B5520, 0x56312E30, 0x312B2020, 0x41525241, 0x4E47452B
 
@@ -518,7 +537,6 @@ lc_l2:
   mov.l @r3,r5
   bra lc_next
   add #1,r5
-lc_l3:
   mov #2,r0
   mov.l r0,@r6
   mov #1,r0
@@ -689,7 +707,333 @@ LW_P1: .long 0x0C510B28
 LW_CNT: .long 0x0C04F834
 LW_MAX: .long 10000
 
-; ---------- ARRANGE HUD: the FEVER bar (0C04F834) under the 1P lives; 2P works as normal ----------
+; ---------- FEVER counter: called instead of 0C0616D0 just before the frame's blitter list is closed. In
+; ARRANGE+ play it appends, for each digit of the FEVER counter (left-aligned, no leading zeros), first its gold
+; glow and then the digit itself: an upload from the glyph area in ROM to a VRAM scratch slot and a draw, the
+; digit tinted orange below 10000 and gold at 10000 and in Fever. Placed by FN_XC/FN_YC in the frame's
+; framebuffer. ----------
+fevnum:
+  sts.l pr,@-r15
+  mov.l FN_ORIG,r0
+  jsr @r0
+  nop
+  lds.l @r15+,pr
+  mov.l FN_ARR,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bt fn_off
+; only in play: the title menu sets the ARRANGE+ flag while the selector is on ARRANGE+, and drawing there froze
+; the MiSTer core; the gameplay HUD (ahud) stamps the vblank count every frame it runs
+  mov.l FN_VBL,r0
+  mov.l @r0,r0
+  mov.l FN_STAMP,r1
+  mov.l @r1,r1
+  sub r1,r0
+  mov #4,r1
+  cmp/hs r1,r0
+  bf fn_on
+fn_off:
+  rts
+  nop
+fn_on:
+  mov.l r8,@-r15
+  mov.l r9,@-r15
+  mov.l r10,@-r15
+  mov.l r11,@-r15
+  mov.l r12,@-r15
+  mov.l r13,@-r15
+  mov.l r14,@-r15
+  mov.l FN_CNT,r0
+  mov.l @r0,r13
+; r10 = tint: orange below 10000, gold at 10000 and in Fever
+  mov.l FN_TOR,r10
+  mov.l FN_10K,r0
+  cmp/hs r0,r13
+  bt fn_gold
+  mov.l FN_FEV,r0
+  mov.l @r0,r0
+  tst r0,r0
+  bt fn_tint
+fn_gold:
+  mov.l FN_TGD,r10
+fn_tint:
+; r12 = digit record (w, h, pixels uploaded = stride*h, stride (24), 10 glyph addresses)
+  mov.l FN_SIZES,r12
+; r9 = dst x = origin x + FN_XC - w/2
+  mov.l FN_ORGX,r0
+  mov.l @r0,r9
+  mov.l FN_XC,r0
+  add r0,r9
+  mov.w @r12,r0
+  shlr r0
+  sub r0,r9
+; r14 = dst y of slot 0 = origin y + FN_YC - 5h/2
+  mov.l FN_ORGY,r0
+  mov.l @r0,r14
+  mov.l FN_YC,r0
+  add r0,r14
+  mov.w @(2,r12),r0
+  mov r0,r1
+  shll2 r0
+  add r1,r0
+  shlr r0
+  sub r0,r14
+  mov.l FN_LPTR,r0
+  mov.l @r0,r8
+; two passes over the digits, r7 = 0: all the glows, r7 = 1: all the digits on top (a glow reaches 3 px past
+; its digit, so drawing glow+digit per digit would let the next glow brighten the previous digit's edge)
+  mov.l r13,@-r15
+  mov.l r14,@-r15
+  mov #0,r7
+fn_pass:
+  mov.l @r15,r14
+  mov.l @(4,r15),r13
+  mov.l FN_MASK31,r0
+  and r0,r10
+  mov #0,r11
+fn_dig:
+  mova FN_POW,r0
+  mov r11,r1
+  shll2 r1
+  mov.l @(r0,r1),r1
+  mov #0,r2
+fn_div:
+  cmp/hs r1,r13
+  bf fn_dd
+  sub r1,r13
+  bra fn_div
+  add #1,r2
+fn_dd:
+  tst r2,r2
+  bf fn_draw
+  mov r11,r0
+  cmp/eq #4,r0
+  bt fn_draw
+  cmp/pz r10
+  bf fn_draw
+  bra fn_skip
+  nop
+fn_draw:
+  mov.l FN_BIT31,r0
+  or r0,r10
+; r4 = VRAM y of this slot (x is FN_VX)
+  mov r11,r0
+  mov #24,r1
+  mulu.w r0,r1
+  sts macl,r4
+  mov.l FN_VY,r0
+  add r0,r4
+  tst r7,r7
+  bf fn_dgt
+; build 74: gold glow first. Upload this digit's glow image (24 x GLOW_H) to the second scratch slot
+; (x FN_GX, same y) and draw it additively (s + d) 3 px up and left of the digit; the digit is drawn over it
+  mov.l FN_UP,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov #0,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.l FN_9999,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.w r0,@r8
+  add #2,r8
+  mov.l FN_GX,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.w r4,@r8
+  add #2,r8
+  mov #23,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.l FN_GHM1,r0
+  mov.w r0,@r8
+  add #2,r8
+  mova FN_GLOW,r0
+  mov r2,r3
+  shll2 r3
+  mov.l @(r0,r3),r5
+  mov.l FN_GN,r0
+  mov r0,r6
+fn_gcp:
+  mov.w @r5+,r0
+  mov.w r0,@r8
+  dt r6
+  bf/s fn_gcp
+  add #2,r8
+  mov.l FN_GATTR,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov #-1,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.l FN_GX,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.w r4,@r8
+  add #2,r8
+  mov r9,r0
+  add #-3,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov r14,r0
+  add #-3,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.l FN_GWM1,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.l FN_GHM1,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov #-128,r0
+  extu.b r0,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.l FN_8080,r0
+  mov.w r0,@r8
+  add #2,r8
+  bra fn_next
+  nop
+fn_dgt:
+; upload: 2000 0000 9999 9999 x y w-1 h-1 pixels
+  mov.l FN_UP,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov #0,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.l FN_9999,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.w r0,@r8
+  add #2,r8
+  mov.l FN_VX,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.w r4,@r8
+  add #2,r8
+; upload width = the stride (24, a multiple of 8 like the game's own uploads); the draw below uses the real w
+  mov.w @(6,r12),r0
+  add #-1,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.w @(2,r12),r0
+  add #-1,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov r2,r0
+  shll2 r0
+  add #8,r0
+  mov.l @(r0,r12),r5
+  mov.w @(4,r12),r0
+  mov r0,r6
+fn_cp:
+  mov.w @r5+,r0
+  mov.w r0,@r8
+  dt r6
+  bf/s fn_cp
+  add #2,r8
+; draw: 1100 (transparent, no blend) 0000 srcx srcy dstx dsty w-1 h-1 tint_r tint_gb
+  mov.l FN_DRAW,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov #0,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.l FN_VX,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.w r4,@r8
+  add #2,r8
+  mov.w r9,@r8
+  add #2,r8
+  mov.w r14,@r8
+  add #2,r8
+  mov.w @r12,r0
+  add #-1,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.w @(2,r12),r0
+  add #-1,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov r10,r0
+  shlr16 r0
+  extu.b r0,r0
+  mov.w r0,@r8
+  add #2,r8
+  mov.w r10,@r8
+  add #2,r8
+fn_next:
+  mov.w @(2,r12),r0
+  add r0,r14
+; build 75: leading zeros are skipped without moving along, so the number is left-aligned
+fn_skip:
+  add #1,r11
+  mov r11,r0
+  cmp/eq #5,r0
+  bt fn_done
+  bra fn_dig
+  nop
+fn_done:
+  tst r7,r7
+  bf fn_fin
+  bra fn_pass
+  mov #1,r7
+fn_fin:
+  add #8,r15
+; new end of list (the game pads and terminates it after this call)
+  mov.l FN_LPTR,r0
+  mov.l r8,@r0
+  mov.l FN_END,r1
+  mov.l r1,@r8
+  mov.l @r15+,r14
+  mov.l @r15+,r13
+  mov.l @r15+,r12
+  mov.l @r15+,r11
+  mov.l @r15+,r10
+  mov.l @r15+,r9
+  rts
+  mov.l @r15+,r8
+  .align 4
+FN_ORIG: .long 0x0C0616D0
+FN_ARR: .long 0x0C04F830
+FN_CNT: .long 0x0C04F834
+FN_FEV: .long 0x0C04F838
+FN_VBL: .long 0x0C002310
+FN_STAMP: .long 0x0C04F9F4
+FN_ORGX: .long 0x0C482010
+FN_ORGY: .long 0x0C4B77B0
+FN_LPTR: .long 0x0C53EE08
+FN_END: .long 0xF0000000
+FN_BIT31: .long 0x80000000
+FN_MASK31: .long 0x7FFFFFFF
+FN_TOR: .long TINTOR
+FN_TGD: .long TINTGD
+FN_SIZES: .long fn_sizes
+FN_POW: .long 10000, 1000, 100, 10, 1
+FN_10K: .long 10000
+FN_XC: .long XCV
+FN_YC: .long YCV
+FN_VX: .long VXV
+FN_VY: .long VYV
+FN_UP: .long 0x2000
+FN_9999: .long 0x9999
+FN_DRAW: .long 0x1100
+FN_GX: .long GXV
+FN_GWM1: .long GWV
+FN_GHM1: .long GHV
+FN_GN: .long GNV
+FN_GATTR: .long 0x1300
+FN_8080: .long 0x8080
+  .align 4
+FN_GLOW: GLOWTABLE
+fn_sizes:
+SIZETABLE
+
+; ---------- ARRANGE HUD (every gameplay frame, ARRANGE+ only): runs arrfx, tells fevnum the gameplay HUD ran,
+; and keeps the text cells under the FEVER counter blank (column 35 rows 0-7, column 34 rows 0-13) ----------
 ahud:
   mov.l AH_ARR,r0
   mov.l @r0,r0
@@ -698,340 +1042,47 @@ ahud:
   rts
   nop
 ah_on:
+; tell fevnum that the gameplay HUD ran this frame (vblank count -> patch RAM 0C04F9F4); the title menu sets
+; the ARRANGE+ flag while the selector is on ARRANGE+, and the counter must not be drawn there
+  mov.l AH_VBL,r0
+  mov.l @r0,r0
+  mov.l AH_STAMP,r1
+  mov.l r0,@r1
   sts.l pr,@-r15
   mov.l AH_FX,r0
   jsr @r0
   nop
   lds.l @r15+,pr
-; full 2P: the 2P label, score, join prompts and inputs are left alone.
-; column 35 rows 0-7 (under the 1P lives icon): the FEVER bar, 64 pixels (counter * 64 / 10000), built from
-; the font's 1-8 pixel blocks (codes 16-23); blue while below 10000 (filling or draining), yellow when full
-  mov.l AH_CNT,r0
-  mov.l @r0,r3
-  mov.l AH_BLUE,r7
-  mov.w AH_10K,r0
-  cmp/hs r0,r3
-  bf ah_blu
-  mov.l AH_RED,r7
-ah_blu:
-  shll2 r3
-  add r3,r3
-  mov #0,r4
-  mov.w AH_1250,r1
-ah_q:
-  cmp/hs r1,r3
-  bf ah_qd
-  sub r1,r3
-  bra ah_q
-  add #1,r4
-ah_qd:
-  mov.l AH_BAR,r2
-  mov #8,r5
-  mov #8,r6
-ah_bc:
-  cmp/ge r6,r4
-  bf ah_bp
-  mov #23,r0
-  bra ah_bw
-  nop
-ah_bp:
-  cmp/pl r4
-  bt ah_bpt
-  mov #32,r0
-  bra ah_bw
-  nop
-ah_bpt:
-  mov r4,r0
-  add #15,r0
-ah_bw:
-  or r7,r0
-  mov.l r0,@r2
-  add #4,r2
-  add #-8,r4
-  dt r5
-  bf ah_bc
-; column 34 rows 0-13 (under the bar): FEVER READY in yellow while the counter is full, flashing
-; (16 frames on, 16 off, from the vblank count); blank otherwise
-  mov.l AH_CNT,r0
-  mov.l @r0,r3
-  mov.w AH_10K,r0
-  mov #0,r6
-  cmp/hs r0,r3
-  bf ah_rdy
-  mov.l AH_VBL,r0
-  mov.l @r0,r0
-  tst #16,r0
-  bf ah_rdy
-  mov #1,r6
-ah_rdy:
-  mov.l AH_RDY,r2
-  mova AH_RTXT,r0
-  mov r0,r5
-  mov.l AH_RCOL,r7
-  mov #14,r1
-ah_rl:
-  mov.b @r5+,r0
-  extu.b r0,r0
-  or r7,r0
-  tst r6,r6
-  bf ah_rw
   mov #0,r0
-ah_rw:
+  mov.l AH_C35,r2
+  mov #8,r1
+ah_cb:
   mov.l r0,@r2
   dt r1
-  bf/s ah_rl
+  bf/s ah_cb
   add #4,r2
-  mov.l AH_DIRTY34,r2
-  mov #1,r0
+  mov.l AH_C34,r2
+  mov #14,r1
+ah_cr:
   mov.l r0,@r2
-; redraw column 35
-  mov.l AH_DIRTY,r2
+  dt r1
+  bf/s ah_cr
+  add #4,r2
   mov #1,r0
+  mov.l AH_DIRTY34,r2
+  mov.l r0,@r2
+  mov.l AH_DIRTY35,r2
   rts
   mov.l r0,@r2
   .align 4
 AH_ARR: .long 0x0C04F830
+AH_STAMP: .long 0x0C04F9F4
 AH_FX: .long arrfx
-AH_CNT: .long 0x0C04F834
-AH_C39: .long 0x0C484CEC
-AH_C38: .long 0x0C484C70
-AH_C36F: .long 0x0C484BD4
-AH_DIRTY: .long 0x0C4EADB0
-AH_BAR: .long 0x0C484AB8
-AH_RDY: .long 0x0C484A40
-AH_DIRTY34: .long 0x0C4EADA8
 AH_VBL: .long 0x0C002310
-AH_RTXT: .long 0x46455645, 0x52205245, 0x41445920, 0x20200000
-AH_RCOL: .long 0x80801000
-AH_BLUE: .long 0x20408000
-AH_RED: .long 0x80800000
-AH_10K: .word 10000
-AH_1250: .word 1250
-  .align 4
-AH_LCOL: .long 0x60308000
-AH_YCOL: .long 0x80602000
-AH_SCOL: .long 0x80808000
-AH_BLANK: .long 0x80602020
-AH_POW: .long 10000, 1000, 100, 10, 1
-AH_FTXT: .long 0x46455645, 0x52200000
-
-; ---------- Fever game speed: replaces the game loop's "skip the world update when 0C48A168 == -1" test
-; (jumped to from 0C06F996, r7 = 0C48A168). Runs every frame the world could update, so nothing is left stale.
-; In Fever an accumulator gives FEVER_SPEED percent: each frame acc += speed, updates = acc / 100;
-; 0 updates -> skip, otherwise 0C48A168 = updates - 1 (the loop runs 0C48A168 + 1 times). ----------
-fevspeed:
-  mov.l SP_ARR,r0
-  mov.l @r0,r0
-  tst r0,r0
-  bt sp_ton
-  mov.l SP_FEV,r0
-  mov.l @r0,r0
-  tst r0,r0
-  bf sp_fev
-; after Fever ran out: 50% during the end window
-  mov.l SP_KIND,r0
-  mov.l @r0,r0
-  cmp/eq #2,r0
-  bf sp_ton
-  mov.l SP_FADE,r0
-  mov.l @r0,r0
-  tst r0,r0
-  bf sp_fev
-sp_ton:
-  bra sp_norm
-  nop
-sp_fev:
-; Fever speed in tenths of a percent from the enemy bullets on screen (n, both bullet lists):
-; n <= 100: 1000 - 3n, at most 990 (99% .. 70%), 100 < n < 150: 700 - 4(n - 100) (70% .. 50%), n >= 150: 500
-  mov.l r3,@-r15
-  mov.l r5,@-r15
-  mov.l SP_BPOOL,r1
-  mov.w SP_N1,r5
-  mov #0,r3
-sp_cnt:
-  mov.l @r1,r0
-  tst r0,r0
-  bt sp_c1
-  add #1,r3
-sp_c1:
-  dt r5
-  bf/s sp_cnt
-  add #92,r1
-  mov.l SP_P2,r1
-  mov.w SP_N2,r5
-sp_cnt2:
-  mov.l @r1,r0
-  tst r0,r0
-  bt sp_c2
-  mov.l @(4,r1),r0
-  mov.l SP_HLO,r2
-  cmp/hs r2,r0
-  bf sp_c2
-  mov.l SP_HHI,r2
-  cmp/hs r2,r0
-  bt sp_c2
-  add #1,r3
-sp_c2:
-  mov.w SP_S2,r0
-  add r0,r1
-  dt r5
-  bf sp_cnt2
-  mov #100,r0
-  cmp/hi r0,r3
-  bt sp_hi
-  mov r3,r2
-  add r2,r2
-  add r3,r2
-  mov.w SP_1000,r0
-  sub r2,r0
-; never above 99%
-  mov.w SP_990,r2
-  cmp/gt r2,r0
-  bt sp_acc
-  bra sp_acc
-  mov r0,r2
-sp_hi:
-  mov.w SP_150,r0
-  cmp/hs r0,r3
-  bt sp_min
-  add #-100,r3
-  shll2 r3
-  mov.w SP_700,r2
-  bra sp_acc
-  sub r3,r2
-sp_min:
-  mov.w SP_500,r2
-sp_acc:
-  mov.l @r15+,r5
-  mov.l @r15+,r3
-; first 4 seconds of Fever (the start window 0C04F87C): a straight 50%, slow motion for the medal burst
-  mov.l SP_SWIN,r1
-  mov.l @r1,r0
-  tst r0,r0
-  bf sp_slow
-  mov.l SP_FEV,r1
-  mov.l @r1,r0
-  tst r0,r0
-  bf sp_ease
-sp_slow:
-  mov.w SP_500,r2
-  mov.l SP_CUR,r1
-  mov.l r2,@r1
-sp_ease:
-; ease toward the target: the speed moves at most 1% (10 tenths) per call
-  mov.l SP_CUR,r1
-  mov.l @r1,r0
-  mov r2,r4
-  cmp/hi r0,r4
-  bt sp_up
-  add #-10,r0
-  cmp/gt r4,r0
-  bt sp_st
-  bra sp_st
-  mov r4,r0
-sp_up:
-  add #10,r0
-  cmp/gt r4,r0
-  bf sp_st
-  mov r4,r0
-sp_st:
-  mov.l r0,@r1
-  mov r0,r2
-; real frames since the last call (vblank count 0C002310), 1..3: the game drops to 30 Hz when busy,
-; so the speed is measured against real time, not against game frames
-  mov.l SP_VBL,r0
-  mov.l @r0,r0
-  mov.l SP_LASTV,r1
-  mov.l @r1,r4
-  mov.l r0,@r1
-  sub r4,r0
-  mov #1,r4
-  cmp/hs r4,r0
-  bt sp_e1
-  mov #1,r0
-sp_e1:
-  mov #3,r4
-  cmp/hi r4,r0
-  bf sp_e2
-  mov #3,r0
-sp_e2:
-  mov r2,r4
-sp_m:
-  dt r0
-  bt sp_md
-  bra sp_m
-  add r4,r2
-sp_md:
-  mov.l SP_ACC,r1
-  mov.l @r1,r0
-  add r2,r0
-  mov #0,r2
-  mov.w SP_1000,r4
-sp_div:
-  cmp/hs r4,r0
-  bf sp_set
-  sub r4,r0
-  bra sp_div
-  add #1,r2
-sp_set:
-  mov.l r0,@r1
-  tst r2,r2
-  bt sp_skip
-; at most 2 updates per call
-  mov #2,r0
-  cmp/hi r0,r2
-  bf sp_cap
-  mov r0,r2
-sp_cap:
-  add #-1,r2
-  bra sp_go
-  mov.l r2,@r7
-sp_norm:
-; outside Fever the eased speed waits at 99% for the next Fever
-  mov.l SP_CUR,r1
-  mov.w SP_990,r0
-  mov.l r0,@r1
-  mov.l @r7,r0
-  cmp/eq #-1,r0
-  bt sp_skip
-  mov #0,r0
-  mov.l r0,@r7
-sp_go:
-  mov #0,r10
-  mov.l SP_RUN,r0
-  jmp @r0
-  nop
-sp_skip:
-  mov #0,r10
-  mov.l SP_SKIP,r0
-  jmp @r0
-  nop
-  .align 4
-SP_FEV: .long 0x0C04F838
-SP_ARR: .long 0x0C04F830
-SP_ACC: .long 0x0C04F850
-SP_RUN: .long 0x0C06F99C
-SP_SKIP: .long 0x0C06FA72
-SP_BPOOL: .long 0x0C4C371C
-SP_VBL: .long 0x0C002310
-SP_LASTV: .long 0x0C04F870
-SP_BCNT: .long 0x0C5108FC
-SP_P2: .long 0x0C4EC6F8
-SP_CUR: .long 0x0C04F880
-SP_SWIN: .long 0x0C04F87C
-SP_KIND: .long 0x0C04F88C
-SP_FADE: .long 0x0C04F878
-SP_HLO: .long 0x0C0D0000
-SP_HHI: .long 0x0C0E0000
-SP_1000: .word 1000
-SP_700: .word 700
-SP_500: .word 500
-SP_150: .word 150
-SP_990: .word 990
-SP_N1: .word 1536
-SP_N2: .word 256
-SP_S2: .word 144
-  .align 4
+AH_C35: .long 0x0C484AB8
+AH_C34: .long 0x0C484A40
+AH_DIRTY35: .long 0x0C4EADB0
+AH_DIRTY34: .long 0x0C4EADA8
 
 ; ---------- ARRANGE+: player hit (tail-jumped to from 0C074486 / 0C074848, r4 = player). During Fever, or with
 ; the counter full, the hit does not kill: it asks arrfx to end (or start) Fever (same request as the bomb) and gives 90 steps of grace, so the bullet
@@ -1453,7 +1504,6 @@ fx_nf:
   mov.l @(8,r8),r0
   cmp/eq #18,r0
   bt fx_mn
-fx_beam:
   tst r10,r10
   bt fx_out_b
 ; in the beam: above the player and within 40 pixels sideways
@@ -1704,11 +1754,9 @@ FX_RS: .long 0x0C04F844
 FX_BREQ: .long 0x0C04F868
 FX_GRACE: .long 0x0C04F86C
 FX_KIND: .long 0x0C04F88C
-FX_SMALL: .long 0x0C04F890
 FX_EFIRST: .long 0x0C04F894
 FX_MPK: .long 0x0C04F874
 FX_FADE: .long 0x0C04F878
-FX_FCOL: .long 0x02040000
 FX_SWIN: .long 0x0C04F87C
 FX_MODE1: .long 0x0C4EAC3C
 FX_MODE2: .long 0x0C48227F
@@ -1725,15 +1773,10 @@ FX_O214L: .long 0x00000214
 FX_LAST: .long 0x0C04F83C
 FX_PST: .long 0x0C04F840
 FX_P1: .long 0x0C510B28
-FX_O228: .long 0x00000228
-FX_EXT: .long 20000000
 FX_FEV: .long 0x0C04F838
 FX_CNT: .long 0x0C04F834
 FX_MAX: .long 10000
 FX_EDGE: .long 0x0C481F3C
-FX_P1IN: .long 0x0C481DF8, 0x0C481E38, 0x0C481E78, 0x0C481EFC, 0x0C481F3C, 0x0C481F7C
-FX_BPOOL: .long 0x0C4C371C
-FX_BCNT: .long 0x0C5108FC
 FX_MECH: .long 0x00002000
 FX_IPOOL: .long 0x0C52B648
 FX_HALFW: .long 0x00280000
@@ -1743,9 +1786,6 @@ FX_IINIT: .long 0x0C080B40
 FX_ALLOC: .long 0x0C07F6A0
 FX_NEWIX: .long 0x0C4C24EC
 FX_IVEL: .long 0x0C081330
-FX_IFLAG: .long 0xC0800004
-FX_O20A: .word 0x020A
-FX_NSLOT: .word 200
   .align 4
 
 ; fxwin: the Fever start window (bullets -> pushed-up 10000 medals) and end window (bullets fade out)
@@ -1762,16 +1802,23 @@ fxwin:
   mov #0,r10
   cmp/eq #120,r0
   movt r10
+; build 76: the medals made from bullets here burst out at half speed (flag read by scatterw)
+  mov.l W_HALF,r1
+  mov #1,r0
+  mov.l r0,@r1
   bsr b2med
   nop
   bsr p2pass
   nop
+  mov.l W_HALF,r1
+  mov #0,r0
+  mov.l r0,@r1
   bsr floatcap
   nop
 fx_nosw:
 ; ---- Fever end window (4 seconds): on the first step every enemy bullet becomes a medal (100 after a hit or
 ; the bomb, 10000 when the counter ran out), later bullets are removed as soon as they appear. After the
-; counter ran out the medals float (and fevspeed runs the window at 50%) ----
+; counter ran out the medals float ----
   mov.l W_FADE,r1
   mov.l @r1,r0
   tst r0,r0
@@ -1857,6 +1904,7 @@ fw_fn:
   nop
   .align 4
 W_SWIN: .long 0x0C04F87C
+W_HALF: .long 0x0C04F9F8
 W_BPOOL: .long 0x0C4C371C
 W_FADE: .long 0x0C04F878
 W_EFIRST: .long 0x0C04F894
@@ -1993,6 +2041,13 @@ scatterw:
   and r1,r0
   mov.l SW_VMIN,r1
   add r1,r0
+; build 76: half speed for the medals from bullets at Fever start
+  mov.l SW_HALF,r1
+  mov.l @r1,r1
+  tst r1,r1
+  bt scw_v
+  shlr r0
+scw_v:
   mov.l r0,@(52,r4)
   mov.l SW_RAND,r0
   jsr @r0
@@ -2002,6 +2057,12 @@ scatterw:
   and r1,r0
   mov.l SW_HOFF,r1
   add r1,r0
+  mov.l SW_HALF,r1
+  mov.l @r1,r1
+  tst r1,r1
+  bt scw_h
+  shlr r0
+scw_h:
   tst r5,r5
   bt scw_r
   neg r0,r0
@@ -2016,6 +2077,7 @@ SW_RMASK: .long 0x0000FFFF
 SW_VMIN: .long 0x00020000
 SW_HOFF: .long 0x00020000
 SW_HMASK: .long 0x0001FFFF
+SW_HALF: .long 0x0C04F9F8
 
 ; dblb: double enemy bullets while the FEVER counter is full or Fever is on (until the counter is back at 0).
 ; Every new bullet in the main list gets a twin about 8 degrees off and 15% slower. +64 of a bullet marks it as
@@ -2573,7 +2635,6 @@ hp_put:
   mov.l LT_DIRTY1,r7
   mov #1,r0
   mov.l r0,@r7
-hp_done:
   mov.l LT_STATE,r10
   mov #1,r0
   mov.l r0,@(12,r10)
@@ -2622,10 +2683,6 @@ draw:
   rts
   mov.l r0,@r7
 
-WT_NSLOT: .word 192
-WT_STRIDE: .word 200
-WT_SUB: .word 0xB4
-WT_HP: .word 0x44
   .align 4
 LT_ENEMY: .long 0x0C4B7C9C
 LT_TABLE: .long enemy_table
@@ -2646,7 +2703,6 @@ LT_HYEL: .long 0x80800000
 LT_HRED: .long 0x80201000
 LT_HCYN: .long 0x20708000
 LT_DIRTY1: .long 0x0C4EADB8
-LT_MAINBIT: .long 0x00008000
 LT_COLOR: .long 0x80808000
 LT_FCOUNT: .long 0x0C4857C4   ; gameplay update-step counter (stops while paused); was 0C516FD0
 '''
@@ -2655,7 +2711,18 @@ def main():
     sites = patch_sites(open(RAM_DUMP, 'rb').read() if RAM_DUMP else None)
     cell_top = 0x0C483A50 + (MENU_COL * 30 + MENU_ROW) * 4
     dirty_bottom = 0x0C4EAC98 + (MENU_COL - 4) * 8
-    body = SRC.replace('CELL_TOP', hex(cell_top)).replace('DIRTY_BOTTOM', hex(dirty_bottom)).replace('#ARROW', f'#{ARROW}').replace('FEVER_SPEED', str(FEVER_SPEED))
+    body = SRC.replace('CELL_TOP', hex(cell_top)).replace('DIRTY_BOTTOM', hex(dirty_bottom)).replace('#ARROW', f'#{ARROW}')
+    tint = lambda t: '0x%08x' % (t[0] << 16 | t[1] << 8 | t[2])
+    sizes = ''
+    for w, h, off in god_glyphs.GLYPH_LAYOUT:
+        st = god_glyphs.GLYPH_STRIDE
+        sizes += f'  .word {w}, {h}, {st * h}, {st}' + chr(10) + '  .long ' + ', '.join('0x%08x' % (GLYPH_ADDR + off + d * st * h * 2) for d in range(10)) + chr(10)
+    body = (body.replace('TINTOR', tint(FN_TINT_ORANGE)).replace('TINTGD', tint(FN_TINT_GOLD))
+            .replace('XCV', str(FN_XC)).replace('YCV', str(FN_YC)).replace('VXV', str(FN_VX)).replace('VYV', str(FN_VY))
+            .replace('SIZETABLE', sizes)
+            .replace('GLOWTABLE', '.long ' + ', '.join('0x%08x' % (GLYPH_ADDR + god_glyphs.GLOW_OFF + d * god_glyphs.GLYPH_STRIDE * god_glyphs.GLOW_H * 2) for d in range(10)))
+            .replace('GXV', str(FN_VX + 24)).replace('GWV', str(god_glyphs.GLOW_W - 1)).replace('GHV', str(god_glyphs.GLOW_H - 1))
+            .replace('GNV', str(god_glyphs.GLYPH_STRIDE * god_glyphs.GLOW_H)))
     stub = '''romstub:
 ; boot entry (0x1C4 points here, in ROM): copy the whole patch into RAM and continue there, so none of it runs
 ; out of the program ROM during play
@@ -2692,6 +2759,10 @@ RS_GO: .long patcher
     assert struct.unpack('>I', be[0x1C4:0x1C8])[0] == MAIN
     be[ROM_OFF:ROM_OFF + len(code)] = code
     be[0x1C4:0x1C8] = struct.pack('>I', ROM_ADDR)   # romstub, run from ROM once at boot
+    assert ROM_OFF + len(code) <= GLYPH_OFF, 'patch code runs into the glyph area'
+    assert all(b == 0xFF for b in be[GLYPH_OFF:GLYPH_OFF + god_glyphs.GLYPH_BYTES]), 'glyph area not blank'
+    if GOD:
+        be[GLYPH_OFF:GLYPH_OFF + god_glyphs.GLYPH_BYTES] = god_glyphs.build_glyphs(GOD)
     sw = bytearray(len(be)); sw[0::2] = be[1::2]; sw[1::2] = be[0::2]
     with zipfile.ZipFile(OUT_ZIP, 'w', zipfile.ZIP_DEFLATED) as o:
         for n in z.namelist():

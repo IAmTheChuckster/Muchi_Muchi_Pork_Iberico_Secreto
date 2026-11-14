@@ -9,23 +9,21 @@ Why did I make this? Because it's fun and for my own personal research to see th
 While Claude was used I put effort in making sure there are balanced gameplay.<br>
 I did all the testing and planning.
 ## To Do:
-1. remove software slowdown
-2. update menu so unselected modes are white  
     
 ## Patch Notes
 - **Boss and midboss timer.** Shows the seconds left in every boss and midboss fight, on the line under the hi-score. It stops while the game is paused. The game's mode name is no longer shown there in any mode.
 - **Boss health bar.** A bar centred under the timer showing the health of the boss or midboss part you are hitting. Each part has its own full bar; the bar stays on a part while you keep hitting it and switches to another part after half a second without hits on it, or when the part is destroyed. Before you hit anything it shows the main body. On the main body it is green when full, blue while it counts down, yellow at half or less, red with 15 health or less left; on any other boss part it is always cyan.
 - **Title menu.** After a coin is inserted, or straight away on free play, the title shows **ARCADE / HARAHARA / MANPUKU / V1.01+ / ARRANGE+**.
-  - Move the arrow with the joystick and press Start.
+  - Move the arrow with the joystick and press Start. The selected mode is gold, the others are white.
   - The arrow starts on ARCADE every time.
   - Harahara and Manpuku are unlocked, so the codes aren't needed.
-- **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with a FEVER bar under the 1P lives icon: blue while it fills (and while it drains in Fever), yellow when the counter is full, with FEVER READY flashing in yellow below it.
+- **ARRANGE+ mode.** Starts as a copy of V1.01+ (all of the changes below), with the FEVER counter shown top left, under the 1P lives, in the big digits of the Xbox 360 version (cut from your own 360 GOD package when you patch): orange while it fills, gold at 10000 and while Fever counts down, always with a gold glow around it.
+  - Two players can play. Fever, juggling and the FEVER counter follow player 1.
   - One loop: after the last boss the ending plays and the game is over.
   - Score extends follow your DIP switch settings.
-  - Two players can play. Fever, juggling and the FEVER counter follow player 1.
   - **Medal juggling.** Hitting a medal with the lard shot splits it into two medals one value step higher (100 → 200 → … → 10000), which pop up toward the top of the screen and fall back down, one drifting to each side. Every value change pops, even when there is no room to split. A medal splits once as it enters the beam; it splits again only after leaving the beam and coming back (or when you fire a new lard beam). Up to 64 medals on screen.
   - **FEVER counter.** Every medal collected adds 0.3% of its value (100 adds 0.3, 10000 adds 30), up to 10000. It goes back to 0 when a new game starts (a continue keeps it). While the counter is full, every medal is a 10000 medal and enemies fire revenge bullets when destroyed (as in Manpuku).
-  - **Fever mode.** With the counter at 10000, pressing bomb starts Fever instead of a bomb (getting hit with the counter at 10000 also starts Fever instead of losing a life): the lard meter is filled, every enemy bullet turns into a 10000 medal that bursts up and out across the screen, floats down slowly for 4 seconds and then falls normally, enemies can't shoot for 4 seconds, enemies keep firing revenge bullets when destroyed, the counter counts down 10 per frame and every medal is a 10000 medal. The first 4 seconds run in slow motion at 50%; after that the game slows down gradually with the number of enemy bullets on screen (99% with none, 85% at 50, 70% at 100, 50% at 150 or more), easing by at most 1% per frame. Fever ends when you are hit (you don't lose a life, and you get a moment of safety), when the counter reaches 0, or when you press bomb again (no bomb goes off, and it works even with no bombs in stock). When Fever ends every enemy bullet turns into a medal that bursts out across the screen: a 100 medal if you were hit or pressed bomb, a 10000 medal if the counter ran out (then the next 4 seconds run in 50% slow motion with the medals floating). Enemies can't shoot for 4 seconds, the counter goes to 0, and the medal chain starts over at 100.
+  - **Fever mode.** With the counter at 10000, pressing bomb starts Fever instead of a bomb (getting hit with the counter at 10000 also starts Fever instead of losing a life): the lard meter is filled, every enemy bullet turns into a 10000 medal that bursts up and out across the screen at half speed, floats down slowly for 4 seconds and then falls normally, enemies can't shoot for 4 seconds, enemies keep firing revenge bullets when destroyed, the counter counts down 10 per frame and every medal is a 10000 medal. Fever runs at full speed, with no slow motion. Fever ends when you are hit (you don't lose a life, and you get a moment of safety), when the counter reaches 0, or when you press bomb again (no bomb goes off, and it works even with no bombs in stock). When Fever ends every enemy bullet turns into a medal that bursts out across the screen: a 100 medal if you were hit or pressed bomb, a 10000 medal if the counter ran out (the medals float). Enemies can't shoot for 4 seconds, the counter goes to 0, and the medal chain starts over at 100.
   - **Extra bomb on respawn.** After losing a life you come back with one more bomb than you had when you were hit (up to 4), and never fewer than the game normally gives.
 - **V1.01+ mode.** Arcade with these changes: 
   - Pigs fill the lard meter twice as fast, and the lard shot lasts twice as long.
@@ -35,26 +33,28 @@ I did all the testing and planning.
   - The lard shot only fires while B is held. Letting go ends it straight away, with an empty or a full meter, and whatever is left in the lard meter is kept.
   - Power-up and bomb pickups count twice.
   - Small enemies no longer drop the extra medal every 40th kill; that drop is a power-up like the other drops.
-- **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/11/7 IBERICO SECRETO` (centred).
+- **Warning screen.** Shows a disclaimer that this is an unofficial project, `HAVE FUN!!!` (red) and `2026/11/14 IBERICO SECRETO` (centred).
 - **Title screen.** `SALE BY AMI` is replaced with `NOT FOR SALE`.
 ## Patching the game
-You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24. Both patchers check the input and give identical files: `iberico_u4` (CRC `0fd4b1b1`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
+You need your own **mmpork.zip** (MAME set, 2007/ 4/17 MASTER VER.) with the original u4 (CRC `d06cfa42`), u2, u23 and u24, and your own **Muchi Muchi Pork! Xbox 360 Games-on-Demand package** as a `.zip` or `.7z` (any file name) holding `D51AAA66751AC42DD8A0` and the `D51AAA66751AC42DD8A0.data` folder: the ARRANGE+ FEVER counter digits are cut from it when you patch, so nothing of the 360 game is in this repository. Both patchers check the input and give identical files: `iberico_u4` (CRC `7673bc4b`), the complete romset `mmporkibc.zip` (u2, u23, u24, iberico_u4) and `Muchi Muchi Pork! Iberico Secreto.mra` for MiSTer.
 
 ### Web patcher
 1. Open the [web patcher](https://iamthechuckster.github.io/Muchi_Muchi_Pork_Iberico_Secreto/).
 2. Load your `mmpork.zip` (or the loose u4 file). Everything runs in your browser; nothing is uploaded.
-3. Check that the files are shown as OK.
-4. Download what you need: **mmporkibc.zip** (complete romset), **Muchi Muchi Pork! Iberico Secreto.mra**, **iberico_u4.zip** or **iberico_u4**.
+3. Load your 360 GOD package (`.zip` or `.7z`) in step 2. A zip takes a second; a 7z takes about half a minute, as it has to be unpacked up to the digits.
+4. Check that the files are shown as OK and the patched u4 matches.
+5. Download what you need: **mmporkibc.zip** (complete romset), **Muchi Muchi Pork! Iberico Secreto.mra**, **iberico_u4.zip** or **iberico_u4**.
 
 ### Python script
-Needs Python 3 only (no extra packages). Download `mmpork_patch.py` from this repository, then run:
+Needs Python 3 only (no extra packages). Download `patch.py` from this repository, then run:
 ```
-python3 mmpork_patch.py mmpork.zip --zip --mra
+python3 patch.py mmpork.zip --god 435A07DE.zip --zip --mra
 ```
+- `--god FILE` (required) is your 360 GOD package, `.zip` or `.7z`.
 - `--zip` also writes `mmporkibc.zip` (the input must be the zip).
 - `--mra` also writes `Muchi Muchi Pork! Iberico Secreto.mra`.
 - `-o FILE` sets where `iberico_u4` is written.
-- A loose u4 can be given instead of the zip: `python3 mmpork_patch.py u4`.
+- A loose u4 can be given instead of the zip: `python3 patch.py u4 --god 435A07DE.zip`.
 
 ### Using the patched files
 - **MAME:** MAME doesn't know the `mmporkibc` set, so make a copy of your mmpork set (keep the original safe), replace its u4 with `iberico_u4` renamed to `u4`, and run `mame mmpork`. MAME will warn about a wrong checksum; that is expected.

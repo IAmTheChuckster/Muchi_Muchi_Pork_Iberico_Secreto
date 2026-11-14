@@ -62,6 +62,11 @@ td .role { display: block; color: var(--muted); font-size: 12px; }
 .progress { height: 6px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
 .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
 .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.btngroup { display: flex; flex-wrap: nowrap; gap: 10px; max-width: 100%; min-width: 0; flex: 0 1 auto; }
+.btngroup button { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 420px) { .btngroup button { padding-left: 10px; padding-right: 10px; } }
+.drop.disabled, .drop.disabled:hover { opacity: .55; cursor: not-allowed; border-color: var(--border); background: var(--sunken); }
+.drop.disabled input { pointer-events: none; }
 button { font: 600 14px/1 var(--body); padding: 11px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); cursor: pointer; }
 button.secondary { background: transparent; color: var(--accent); font-family: var(--mono); font-weight: 500; }
 button:disabled { opacity: .45; cursor: not-allowed; }
@@ -73,7 +78,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Muchi Muchi Pork · Cave CV1000 · build 64</div>
+    <div class="eyebrow">Muchi Muchi Pork · Cave CV1000 · build 77</div>
     <h1>Muchi Muchi Pork! Iberico Secreto Patcher</h1>
     <div class="privacy"><span class="dot"></span>Everything runs in your browser. Your ROMs are never uploaded.</div>
   </header>
@@ -89,7 +94,17 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
   </section>
 
   <section class="card">
-    <h2><span class="n">2</span>Check files</h2>
+    <h2><span class="n">2</span>Load your 360 GOD zip</h2>
+    <label class="drop" id="dropGod">
+      <input type="file" id="fileGod" accept=".zip,.7z">
+      <strong>Drop your Xbox 360 Games-on-Demand .zip or .7z here, or click to choose.</strong>
+      <div class="sub">Required. Your own Muchi Muchi Pork! GOD package, any file name; it must contain D51AAA66751AC42DD8A0 and D51AAA66751AC42DD8A0.data (any folder). The ARRANGE+ FEVER counter digits are cut from it, here in your browser.</div>
+    </label>
+    <div class="loaded" id="loadedGod">No GOD package loaded.</div>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">3</span>Check files</h2>
     <div class="tablebox"><table>
       <thead><tr><th>File</th><th>Size</th><th>Expected CRC32</th><th>Found CRC32</th><th>Status</th></tr></thead>
       <tbody id="inrows"></tbody>
@@ -98,17 +113,19 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
   </section>
 
   <section class="card">
-    <h2><span class="n">3</span>Download patched files</h2>
+    <h2><span class="n">4</span>Download patched files</h2>
     <div class="progress" aria-hidden="true"><div id="bar"></div></div>
     <div class="tablebox"><table>
       <thead><tr><th>File</th><th>Expected CRC32</th><th>Built CRC32</th><th>Status</th></tr></thead>
-      <tbody><tr><td class="mono">iberico_u4<span class="role">Patched program ROM (replaces u4)</span></td><td class="mono">0fd4b1b1</td><td class="mono" id="outcrc">—</td><td><span class="pill" id="outstatus">Waiting</span></td></tr></tbody>
+      <tbody><tr><td class="mono">iberico_u4<span class="role">Patched program ROM (replaces u4)</span></td><td class="mono">7673bc4b</td><td class="mono" id="outcrc">—</td><td><span class="pill" id="outstatus">Waiting</span></td></tr></tbody>
     </table></div>
     <div class="buttons">
       <button id="btnSet" disabled>Download mmporkibc.zip</button>
       <button id="btnMra" class="secondary" disabled>Muchi Muchi Pork! Iberico Secreto.mra</button>
-      <button id="btnU4zip" class="secondary" disabled>iberico_u4.zip</button>
-      <button id="btnU4" class="secondary" disabled hidden>iberico_u4</button>
+      <span class="btngroup">
+        <button id="btnU4zip" class="secondary" disabled>iberico_u4.zip</button>
+        <button id="btnU4" class="secondary" disabled hidden>iberico_u4</button>
+      </span>
     </div>
     <p class="hint" id="dlhint">mmporkibc.zip is the full set with u4 replaced by iberico_u4; u2, u23 and u24 are copied unchanged. For MiSTer, put mmporkibc.zip in your games folder and the .mra in _Arcade. Its iberico_u4 CRC matches this build. For the real board, flash iberico_u4 as u4, and back up your original u4 first.</p>
     <p class="msg" id="dlmsg"></p>
@@ -119,14 +136,14 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
 
 <script>
 (() => {
-  const ORIG_CRC = 0xd06cfa42, PATCHED_CRC = 0x0fd4b1b1, U4_SIZE = 0x200000;
+  const ORIG_CRC = 0xd06cfa42, PATCHED_CRC = 0x7673bc4b, U4_SIZE = 0x200000;
   const PATCH = [
     [0x1C4, "H4AAAA=="],
-    [0x1F0000, "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AOZhK2DgCEBlC1LWYmCwMAOLAOACJlHWAiYCe2TgDDAMNBBFsIsYIQaLplCnUgAyBIkA5DugAOWmUAcaRdZiaZgpAYtE1mJpAOMA4gDkmCkXiZFiLWJg4AhAnQM9YygiD4kzYQhBCEEIQUDlIjEDiygxAXQQRfmLSCQCizgjAIkB5DXWYmAAOQSJmCkCiTnVDaAJADbVD+AGMwiLM9UzYAwwJjADiy/VIjMAiS7VKNYI5yDgFUQFiwjhEzQCjRfgQ2APcFsgAiYEdvh0EEfwiynXAeACJxjaAeADGiZP9mv2avZp9mgLAAkAFdFDYh4iGgEpQQlBAUETYAhAHDAMMENiCDITZAsAI2Ad0AshEiYLIiEWCyMyFgskQxYLJVQWAeALAAInwADIALQARAAJAEsMnHwEDBzTBAwA+AAAq6oAAM3MSAzYS04MwK1IDGhLSAxcSwQMmPgEDJz4BAyg+AQMAP2AIAAgQCAAgICAAAAggAAQcCAAgE4MuK0AAACAgIAAgEgMxFcKDCDfmAC0AAAAAAD/ABAO/w3///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDPASmAC0AAAAAAD/ABAO/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDPCfmAC0AAAAAAABADAq/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDDDTVAC0AAAAAAABAKQfMzL///////8DADAqIyIlJP////8FACAc/wX///////8AAAAA//////////8AAAAA//////////8MDLAcmAC0AAAAAAABADAq/wD///////8BASAc/wH///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8MDLBnVAC0AAAAAAABAKQf/z7///////8DADAq/zD///////8FACAc/wD///////8AAAAA//////////8AAAAA//////////8MDKC5mAC0AAAAAAABABAO/zj///////8DADAq/xr///////8FADAq/wD///////8CKjAq/yr///////8AAAAA//////////8KDMD5mAC0AAEAAAABAAUM/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDHAvmAC0AAEAAIABABIM/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDFBLmAC0AAEAAAABAFAK/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDFCAmAC3AAEAAAABAB4P/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8LDJBomAC0AAEAAAABACYW/wD///////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAA//////////8AAAAASFRTSVAgT1JFSlRDSSAAUwAAAAAAAAAAAAAAAHAgAIBOVUZPSUZJQ0xBQSBETkkgIFNPTgBUAAAAAAAAcCAAgEZBSUZJTFRBREVXIFRJLEhFIEROUk9FUwBEAABwIACAWUIgLFJPQSBUVU9ISVJFWiBEWUIAAAAAAAAAAHAgAIBBQ0VWIC5MQSBMSVJIR1NUVCAgT0hUAEUAAAAAcCAAgFJPR0lOSUxBRyBNQSBFTkEgRFRJAFMAAAAAAABwIACAU0FPU0lDVEFERUkgVE5MRUVMVENBVQBMAAAAAHAgAIBSUFBPUkVZVFIgTUVJQSBOSVdIVAAAAAAAAAAAcCAAgEhUSUUgUkVSUFNDRUlURVZSIEdJVEgAUwAAAABwIACAT0hETFJFLlMAAAAAAAAAAAAAAAAAAAAAAAAAAHAgAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcCAAgCAgICAgIEFIRVZGIE5VISEgISAgICAgIAAAAAAgcAAQMDI2MjEvLzEgN0JJUkVDSSBPRVNSQ1RFAE8AAAAAAABPTiBUT0YgUkFTRUwAAAAABgxM/AYMcBAEDNTDBgyc0gYMcBAEDGTABgxE0AcM0HsEDHTBBgwEzxOLTtoTiwHQBgwIz6BgM8krQAkABgwMzwGIAo8EDIDACQwoCBB/AXEQfwfQCQwsCB1gaIgrQAkACQxICAkACQAEDPjBBwzIajJiKCId1CtEBwzMahCP827zbgkABwxAa1EMTFwEDNDCCQzAZQzTMGIM0ytDCQzEZSgiC4sJAAuLCQz0ZVEMTFwEDIDDBwyEAQcM0HsEDNDDBgyoeg4MpAkEDIDWBgy0eg0MWPYEDADYBgzUeTbYBeY22ALmBgzEeg4MJAsEDBzYBgzUeTbYBeY22ATmBgwgeijUEOYo1A/mBgw40A4MqA8EDCDYBwyohUwBE2BMAXPTBwyshSDJCCArQxNgBwx4hwkACQAEDCjCDgwkKwgM4PgEDHTCDgxEKwgMAPwEDHrCDgxkKwgMwPwEDIDCDgyEKwgMIP8EDIbCDgzEKwkMAAAEDMDHBwwAg3NgQMlzYCrQBwwEgwggSYkrQHNgBwysgwkACQAEDHTHBgyU+XJg/4i40CtABgyY+WuNAOoJAADqBwyYRQcM8N0EDBzHBwz8SAcM8N0EDBzHBgx4/AkACQAEDJjFDQwodU4MPKwEDIj4AAAAAA=="]
+    [0x1F0000, "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plcEd4JiAOF31hImd9ZiYAggAYn/cAImadR122DlXDVCYAggOIlBUCAwNYtE4E0DEUMAiQDjsWANYAYzAIsxK2DgCEC9Bm1mNQs2Ng6LZdZiYLAwBIll0AJgCCAGi7ImYtYe4DgjAIsA4AImT4QDZnNplGD/iByJYDD6i4WFDWAIIAKJQmYIJhOJAXFW1mJgCCAOiw2gsiYA5mErYOAIQGULUNZiYLAwA4sA4AImT9YCJgJ7ZOAMMAw0EEWwixghBoumUKdSADIEiQDkO6AA5aZQBxpD1mJpmCkBi0LWYmkA4wDiAOSYKReJkWItYmDgCECdAz1jKCIPiTNhCEEIQQhBQOUiMQOLKDEBdBBF+YtIJAKLOCMAiQHkM9ZiYAA5BImYKQKJN9UNoAkANNUP4AYzCIsx1TNgDDAmMAOLLdUiMwCJLNUm1gjnIOAVRAWLCOETNAKNF+BDYA9wWyACJgR2+HQQR/CLJ9cB4AInFtoB4AMaJk/2a/Zq9mn2aAsACQAT0UNiHiIaASlBCUEBQRNgCEAcMAwwQ2IIMhNkCwAjYBrQCyESJgsiIRYLIzIWCyRDFgslVBYB4AsAAicJAEsMnHwEDKjTBAwA+AAAq6oAAM3MSAzYS04MwK1IDGhLSAxcSwQMmPgEDJz4BAyg+AQMAP2AIAAgQCAAgICAAAAggAAQcCAAgE4MuK2AgACASAzEVwoMIN+YALQAAAAAAP8AEA7/Df///////wAAAAD//////////wAAAAD//////////wAAAAD//////////wAAAAD//////////wsM8BKYALQAAAAAAP8AEA7/AP///////wAAAAD//////////wAAAAD//////////wAAAAD//////////wAAAAD//////////wsM8J+YALQAAAAAAAEAMCr/AP///////wAAAAD//////////wAAAAD//////////wAAAAD//////////wAAAAD//////////wsMMNNUALQAAAAAAAEApB8zMv///////wMAMCojIiUk/////wUAIBz/Bf///////wAAAAD//////////wAAAAD//////////wwMsByYALQAAAAAAAEAMCr/AP///////wEBIBz/Af///////wAAAAD//////////wAAAAD//////////wAAAAD//////////wwMsGdUALQAAAAAAAEApB//Pv///////wMAMCr/MP///////wUAIBz/AP///////wAAAAD//////////wAAAAD//////////wwMoLmYALQAAAAAAAEAEA7/OP///////wMAMCr/Gv///////wUAMCr/AP///////wIqMCr/Kv///////wAAAAD//////////woMwPmYALQAAQAAAAEABQz/AP///////wAAAAD//////////wAAAAD//////////wAAAAD//////////wAAAAD//////////wsMcC+YALQAAQAAgAEAEgz/AP///////wAAAAD//////////wAAAAD//////////wAAAAD//////////wAAAAD//////////wsMUEuYALQAAQAAAAEAUAr/AP///////wAAAAD//////////wAAAAD//////////wAAAAD//////////wAAAAD//////////wsMUICYALcAAQAAAAEAHg//AP///////wAAAAD//////////wAAAAD//////////wAAAAD//////////wAAAAD//////////wsMkGiYALQAAQAAAAEAJhb/AP///////wAAAAD//////////wAAAAD//////////wAAAAD//////////wAAAAD//////////wAAAABIVFNJUCBPUkVKVENJIABTAAAAAAAAAAAAAAAAcCAAgE5VRk9JRklDTEFBIEROSSAgU09OAFQAAAAAAABwIACARkFJRklMVEFERVcgVEksSEUgRE5ST0VTAEQAAHAgAIBZQiAsUk9BIFRVT0hJUkVaIERZQgAAAAAAAAAAcCAAgEFDRVYgLkxBIExJUkhHU1RUICBPSFQARQAAAABwIACAUk9HSU5JTEFHIE1BIEVOQSBEVEkAUwAAAAAAAHAgAIBTQU9TSUNUQURFSSBUTkxFRUxUQ0FVAEwAAAAAcCAAgFJQUE9SRVlUUiBNRUlBIE5JV0hUAAAAAAAAAABwIACASFRJRSBSRVJQU0NFSVRFVlIgR0lUSABTAAAAAHAgAIBPSERMUkUuUwAAAAAAAAAAAAAAAAAAAAAAAAAAcCAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwIACAICAgICAgQUhFVkYgTlUhISAhICAgICAgAAAAACBwABAwMjYyMS8vMTQxSSBFQklST0NTIENFRVJPVAAAAAAAAE9OIFRPRiBSQVNFTAAAAAAGDEz8BgxwEAQM4MMGDJzSBgxwEAQMZMAGDETQBwzQewQMdMEGDATPE4tO2hOLAdAGDAjPoGAzyStACQAGDAzPAYgCjwQMgMAJDCgIEH8BcRB/B9AJDCwIHWBoiCtACQAJDEgICQAJAAQMBMIHDMhqMmIoIh3UK0QHDMxqEI/zbvNuCQAHDEBrUQxMXAQM3MIJDMBlDNMwYgzTK0MJDMRlKCILiwkAC4sJDPRlUQxMXAQMjMMHDIQBBwzQewQM3MMGDKh6DgykCQQMDNcGDLR6DQxY9gQMjNgGDNR5NtgF5jbYAuYGDMR6DgwkCwQMqNgGDNR5NtgF5jbYBOYGDCB6KNQQ5ijUD+YGDDjQDgyoDwQMrNgHDKiFTAETYEwBc9MHDKyFIMkIICtDE2AHDHiHCQAJAAQMNMIODCQrCAzg+AQMgMIODEQrCAwA/AQMhsIODGQrCAzA/AQMjMIODIQrCAwg/wQMksIODMQrCQwAAAQMaMgHDACDc2BAyXNgKtAHDASDCCBJiStAc2AHDKyDCQAJAAQMHMgHDJhFBwzw3QQMxMcHDPxIBwzw3QQMxMcGDEgnBgzQFgQMiMQNDCh1Tgw8rAQMiPgAAAAA"]
   ];
   const OUT_NAME = "iberico_u4", SET_NAME = "mmporkibc.zip", MRA_NAME = "Muchi Muchi Pork! Iberico Secreto.mra";
   // MiSTer MRA; the iberico_u4 CRC is set from PATCHED_CRC when it is saved.
-  const MRA = "<!--\n  ikacore_CV1k MRA - Muchi Muchi Pork! Iberico Secreto (2026/11/7 IBERICO).\n  Converted from the community MRA (same set, zip names, CRCs and\n  <about>) to the DDR3-direct delivery format, 2026-09-17.\n\n  DELIVERY: the NAND and YMZ images do not stream over the ioctl/SPI\n  lane.  Both roms carry an `address=` attribute, so Main_MiSTer\n  assembles them and memcpys them straight into DDR3; the fabric sees\n  only a download pulse for those two.  Only u4 streams, so the ioctl\n  lane carries 4 MiB instead of the old 152 MiB.  Needs a Main_MiSTer\n  that parses `address` (2021 or later).  Rationale and evidence:\n  docs/mra_ddr3_direct_upload_plan.md.\n\n  Rom order is deliberate - DDR3 first, index 0 LAST.  Index 0's download\n  is what finally releases the CPU, so every image is in place before the\n  core runs, and any spurious run in an inter-rom gap is wiped by the u4\n  download's own reset hold.\n\n    <rom index=\"1\">  DDR3 0x34400000  u2  NAND dump incl. spare (132 MiB,\n                                          exact size)\n    <rom index=\"2\">  DDR3 0x3C800000  u23 YMZ chip 0, zero-padded to the\n                                          8 MiB slot\n                     DDR3 0x3D000000  u24 YMZ chip 1, zero-padded to the\n                                          8 MiB slot\n    <rom index=\"0\">  ioctl stream     u4  program NOR x2 (2 MiB file listed\n                                          twice = the undecoded-A21 mirror\n                                          the boot ROM expects)\n-->\n<misterromdescription>\n    <about author=\"ika-musume\" source=\"https://github.com/ika-musume/ikacore_CV1k\"/>\n    <name>Muchi Muchi Pork! Iberico Secreto (2026/11/7 IBERICO)</name>\n    <setname>mmporkibc</setname>\n    <year>2026</year>\n    <manufacturer>Cave</manufacturer>\n    <category>Shooter</category>\n    <rbf>ikacore_CV1k</rbf>\n\n    <rom index=\"1\" address=\"0x34400000\" zip=\"mmporkibc.zip\" md5=\"none\">\n        <part name=\"u2\" crc=\"1ee961b8\"/>\n    </rom>\n\n    <rom index=\"2\" address=\"0x3C800000\" zip=\"mmporkibc.zip\" md5=\"none\">\n        <part name=\"u23\" crc=\"4a4b36df\"/>\n        <part repeat=\"0x400000\">00</part>\n        <part name=\"u24\" crc=\"ce83d07b\"/>\n        <part repeat=\"0x400000\">00</part>\n    </rom>\n\n    <nvram index=\"3\" size=\"135680\"/>\n\n    <rom index=\"0\" zip=\"mmporkibc.zip\" md5=\"none\">\n        <part name=\"iberico_u4\" crc=\"0fd4b1b1\"/>\n        <part name=\"iberico_u4\" crc=\"0fd4b1b1\"/>\n    </rom>\n\n    <buttons names=\"Rapid Shot,Lard Attack,Bombu,B4,Start,Coin,Test,Service,Save State\" default=\"A,B,X,Y,Start,R,L,Select\"/>\n</misterromdescription>\n";
+  const MRA = "<!--\n  ikacore_CV1k MRA - Muchi Muchi Pork! Iberico Secreto (2026/11/14 IBERICO).\n  Converted from the community MRA (same set, zip names, CRCs and\n  <about>) to the DDR3-direct delivery format, 2026-09-17.\n\n  DELIVERY: the NAND and YMZ images do not stream over the ioctl/SPI\n  lane.  Both roms carry an `address=` attribute, so Main_MiSTer\n  assembles them and memcpys them straight into DDR3; the fabric sees\n  only a download pulse for those two.  Only u4 streams, so the ioctl\n  lane carries 4 MiB instead of the old 152 MiB.  Needs a Main_MiSTer\n  that parses `address` (2021 or later).  Rationale and evidence:\n  docs/mra_ddr3_direct_upload_plan.md.\n\n  Rom order is deliberate - DDR3 first, index 0 LAST.  Index 0's download\n  is what finally releases the CPU, so every image is in place before the\n  core runs, and any spurious run in an inter-rom gap is wiped by the u4\n  download's own reset hold.\n\n    <rom index=\"1\">  DDR3 0x34400000  u2  NAND dump incl. spare (132 MiB,\n                                          exact size)\n    <rom index=\"2\">  DDR3 0x3C800000  u23 YMZ chip 0, zero-padded to the\n                                          8 MiB slot\n                     DDR3 0x3D000000  u24 YMZ chip 1, zero-padded to the\n                                          8 MiB slot\n    <rom index=\"0\">  ioctl stream     u4  program NOR x2 (2 MiB file listed\n                                          twice = the undecoded-A21 mirror\n                                          the boot ROM expects)\n-->\n<misterromdescription>\n    <about author=\"ika-musume\" source=\"https://github.com/ika-musume/ikacore_CV1k\"/>\n    <name>Muchi Muchi Pork! Iberico Secreto (2026/11/14 IBERICO)</name>\n    <setname>mmporkibc</setname>\n    <year>2026</year>\n    <manufacturer>Cave</manufacturer>\n    <category>Shooter</category>\n    <rbf>ikacore_CV1k</rbf>\n\n    <rom index=\"1\" address=\"0x34400000\" zip=\"mmporkibc.zip\" md5=\"none\">\n        <part name=\"u2\" crc=\"1ee961b8\"/>\n    </rom>\n\n    <rom index=\"2\" address=\"0x3C800000\" zip=\"mmporkibc.zip\" md5=\"none\">\n        <part name=\"u23\" crc=\"4a4b36df\"/>\n        <part repeat=\"0x400000\">00</part>\n        <part name=\"u24\" crc=\"ce83d07b\"/>\n        <part repeat=\"0x400000\">00</part>\n    </rom>\n\n    <nvram index=\"3\" size=\"135680\"/>\n\n    <rom index=\"0\" zip=\"mmporkibc.zip\" md5=\"none\">\n        <part name=\"iberico_u4\" crc=\"7673bc4b\"/>\n        <part name=\"iberico_u4\" crc=\"7673bc4b\"/>\n    </rom>\n\n    <buttons names=\"Rapid Shot,Lard Attack,Bombu,B4,Start,Coin,Test,Service,Save State\" default=\"A,B,X,Y,Start,R,L,Select\"/>\n</misterromdescription>\n";
   const SET = [
     { name: "u4",  size: 0x200000,  crc: 0xd06cfa42, role: "Patched" },
     { name: "u2",  size: 138412032, crc: 0x1ee961b8, role: "Copied unchanged" },
@@ -206,7 +223,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
     return new Blob([...parts, ...central, end.buffer], { type: "application/zip" });
   }
 
-  const state = { entries: null, u4Entry: null, loose: {}, patched: null };
+  const state = { entries: null, u4Entry: null, loose: {}, patched: null, u4orig: null, glyphs: null };
   const base = n => { const b = n.split(/[\\/]/).pop().toLowerCase(); return b === OUT_NAME ? "u4" : b; };
   const bar = v => { $("bar").style.width = Math.round(v * 100) + "%"; };
 
@@ -237,6 +254,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
 
   async function load(files) {
     resetOut();
+    state.u4orig = null;
     state.entries = null; state.u4Entry = null; state.loose = {};
     const found = {}; let u4data = null;
     $("loaded").textContent = files.map(f => f.name + " (" + fmtSize(f.size) + ")").join(", ");
@@ -269,17 +287,31 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
     if (!u4data) return fail("No u4 found. Drop mmpork.zip or the u4 file from it.");
     if (u4data.length !== U4_SIZE) return fail("u4 is " + u4data.length.toLocaleString() + " bytes; the original is 2,097,152 bytes.");
     const c = crc32(u4data);
-    if (c === PATCHED_CRC) return fail("This u4 is already patched (CRC 0fd4b1b1). Load the original dump instead.");
+    if (c === PATCHED_CRC) return fail("This u4 is already patched (CRC " + hex(PATCHED_CRC) + "). Load the original dump instead.");
     if (c !== ORIG_CRC) return fail("u4 CRC is " + hex(c) + ", not the original d06cfa42. This patch only works on the original dump.");
-    $("checkmsg").textContent = "Original u4 found (CRC d06cfa42). Patching…"; $("checkmsg").className = "msg ok";
+    state.u4orig = u4data;
+    tryPatch();
+  }
 
-    const out = new Uint8Array(u4data);
+  // patch once both the original u4 and the GOD digits are in
+  function tryPatch() {
+    state.patched = null;
+    ["btnSet", "btnMra", "btnU4zip", "btnU4"].forEach(id => $(id).disabled = true);
+    $("outcrc").textContent = "—"; $("outstatus").className = "pill"; $("dlmsg").textContent = "";
+    if (!state.u4orig) { $("outstatus").textContent = "Waiting"; return; }
+    if (!state.glyphs) {
+      $("outstatus").textContent = "Needs GOD package";
+      $("checkmsg").textContent = "Original u4 found (CRC d06cfa42). Load your 360 GOD package in step 2 to finish iberico_u4."; $("checkmsg").className = "msg ok";
+      bar(.6); return;
+    }
+    const out = new Uint8Array(state.u4orig);
     for (const [off, data] of PATCH) out.set(b64(data), off);
-    const oc = crc32(out); bar(.8);
+    out.set(state.glyphs, GLYPH_FILE_OFF);
+    const oc = crc32(out); bar(.9);
     $("outcrc").textContent = hex(oc);
-    if (oc !== PATCHED_CRC) { $("outstatus").className = "pill err"; $("outstatus").textContent = "Wrong CRC"; return fail("The patched u4 came out with CRC " + hex(oc) + " instead of 0fd4b1b1, so nothing was offered for download."); }
-    $("outstatus").className = "pill ok"; $("outstatus").textContent = "Matches build 64";
-    $("checkmsg").textContent = "Original u4 found (CRC d06cfa42) and patched.";
+    if (oc !== PATCHED_CRC) { $("outstatus").className = "pill err"; $("outstatus").textContent = "Wrong CRC"; return fail("The patched u4 came out with CRC " + hex(oc) + " instead of " + hex(PATCHED_CRC) + ". Is the GOD package your Muchi Muchi Pork! one? Nothing was offered for download."); }
+    $("outstatus").className = "pill ok"; $("outstatus").textContent = "Matches build 77";
+    $("checkmsg").textContent = "Original u4 found (CRC d06cfa42) and patched with the digits from your GOD package."; $("checkmsg").className = "msg ok";
     state.patched = out; bar(1);
     $("btnU4zip").disabled = false; $("btnU4").disabled = false; $("btnMra").disabled = false;
     $("btnSet").disabled = !state.entries;
@@ -322,6 +354,510 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
   $("btnMra").onclick = () => save(MRA_NAME, new Blob([MRA.replace(/(<part name="iberico_u4" crc=")[0-9a-fA-F]{8}/g, (m, p) => p + hex(PATCHED_CRC))], { type: "application/xml" }));
   $("btnU4zip").onclick = async () => save(OUT_NAME + ".zip", buildZip([await u4Item()]));
   $("btnU4").onclick = () => save(OUT_NAME, new Blob([state.patched], { type: "application/octet-stream" }));
+
+  // ---------------------------------------------------------------- 360 GOD package -> FEVER counter digits
+  // Same as god_glyphs.py in patch.py: your own Muchi Muchi Pork! GOD package (.zip or .7z, any name) ->
+  // D51AAA66751AC42DD8A0.data/DataNNNN (hash blocks skipped) -> Xbox disc image -> MPD100.bin -> graphic 1610
+  // (the 360 counter digits; Cave LZSS + dictionary) -> 10 digits and their glow, here in your browser.
+  const GOD_ID = "D51AAA66751AC42DD8A0", GLYPH_SHEET = 1610, GLYPH_FILE_OFF = 0x1F3800;
+  const GLYPH_CELLS = [[162, 0], [162, 64], [162, 128], [162, 192], [82, 0], [82, 64], [82, 128], [82, 192], [2, 0], [2, 64]];
+  const GLYPH_CW = 76, GLYPH_CH = 64, GLYPH_SIZES = [[17, 14]];
+  const GOD_BLK = 0x1000, GOD_PER_FILE = 203 * 204;
+  // gold glow around each digit: colour by squared distance to the nearest digit pixel (as in patch.py)
+  const GLOW_PAD = 3, GLOW_W = 17 + 6, GLOW_H = 14 + 6;
+  const GLOW_LEVELS = { 0: [20, 15, 3], 1: [18, 13, 3], 2: [15, 11, 2], 4: [11, 8, 2], 5: [9, 6, 1], 8: [6, 4, 1], 9: [4, 3, 1] };
+  function glowOf(px, w, h) {
+    const pts = []; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (px[y * w + x] & 0x8000) pts.push([x, y]);
+    // only outside the digit: flood fill from the image border through non-digit pixels (holes stay dark)
+    const solid = new Uint8Array(GLOW_W * GLOW_H), outside = new Uint8Array(GLOW_W * GLOW_H), todo = [];
+    for (const [a, b] of pts) solid[(b + GLOW_PAD) * GLOW_W + a + GLOW_PAD] = 1;
+    for (let x = 0; x < GLOW_W; x++) todo.push([x, 0], [x, GLOW_H - 1]);
+    for (let y = 0; y < GLOW_H; y++) todo.push([0, y], [GLOW_W - 1, y]);
+    while (todo.length) {
+      const [x, y] = todo.pop();
+      if (x < 0 || y < 0 || x >= GLOW_W || y >= GLOW_H) continue;
+      const i = y * GLOW_W + x;
+      if (outside[i] || solid[i]) continue;
+      outside[i] = 1; todo.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+    }
+    const out = [];
+    for (let y = 0; y < GLOW_H; y++) for (let x = 0; x < 24; x++) {
+      let v = 0;
+      if (x < GLOW_W && outside[y * GLOW_W + x]) {
+        const cx = x - GLOW_PAD, cy = y - GLOW_PAD; let d = 99;
+        for (const [a, b] of pts) { const e = (cx - a) ** 2 + (cy - b) ** 2; if (e < d) d = e; }
+        const c = GLOW_LEVELS[d];
+        if (c) v = 0x8000 | (c[0] << 10) | (c[1] << 5) | c[2];
+      }
+      out.push(v);
+    }
+    return out;
+  }
+  const readAt = async (file, start, len) => new Uint8Array(await file.slice(start, start + len).arrayBuffer());
+  const u64 = (dv, o) => dv.getUint32(o, true) + dv.getUint32(o + 4, true) * 4294967296;
+
+  async function listZip(file) {
+    const tailStart = Math.max(0, file.size - 65557);
+    const tail = new DataView((await readAt(file, tailStart, file.size - tailStart)).buffer);
+    let eocd = -1;
+    for (let i = tail.byteLength - 22; i >= 0; i--) if (tail.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) throw new Error("This isn't a readable zip.");
+    let count = tail.getUint16(eocd + 10, true), cdSize = tail.getUint32(eocd + 12, true), cdOff = tail.getUint32(eocd + 16, true);
+    if (count === 0xffff || cdSize === 0xffffffff || cdOff === 0xffffffff) {
+      const loc = eocd - 20;
+      if (loc < 0 || tail.getUint32(loc, true) !== 0x07064b50) throw new Error("This zip's directory can't be read.");
+      const z = new DataView((await readAt(file, u64(tail, loc + 8), 56)).buffer);
+      if (z.getUint32(0, true) !== 0x06064b50) throw new Error("This zip's directory can't be read.");
+      count = u64(z, 32); cdSize = u64(z, 40); cdOff = u64(z, 48);
+    }
+    const u8 = await readAt(file, cdOff, cdSize), cd = new DataView(u8.buffer), out = [], dec = new TextDecoder();
+    for (let n = 0, p = 0; n < count; n++) {
+      if (cd.getUint32(p, true) !== 0x02014b50) throw new Error("This zip's directory is damaged.");
+      const method = cd.getUint16(p + 10, true);
+      let csize = cd.getUint32(p + 20, true), usize = cd.getUint32(p + 24, true), lho = cd.getUint32(p + 42, true);
+      const fl = cd.getUint16(p + 28, true), xl = cd.getUint16(p + 30, true), cl = cd.getUint16(p + 32, true);
+      const name = dec.decode(u8.subarray(p + 46, p + 46 + fl));
+      for (let x = p + 46 + fl, xe = x + xl; x + 4 <= xe; x += 4 + cd.getUint16(x + 2, true)) {
+        if (cd.getUint16(x, true) !== 1) continue;
+        let q = x + 4;
+        if (usize === 0xffffffff) { usize = u64(cd, q); q += 8; }
+        if (csize === 0xffffffff) { csize = u64(cd, q); q += 8; }
+        if (lho === 0xffffffff) { lho = u64(cd, q); q += 8; }
+      }
+      out.push({ name, size: usize, dir: name.endsWith("/"), zip: { method, csize, lho } });
+      p += 46 + fl + xl + cl;
+    }
+    return out;
+  }
+
+  // Streaming LZMA / LZMA2 decoder with a ring-buffer dictionary. feed() adds input; decode(max) returns up to
+  // max new bytes (fewer at the end of the stream). The caller keeps enough input fed (see SevenStream).
+  function lzmaStream(isLzma2, props, unpackSize) {
+    let dictSize = isLzma2 ? (props[0] >= 40 ? 0xffffffff : (2 | (props[0] & 1)) * 2 ** (Math.floor(props[0] / 2) + 11))
+                           : props[1] | props[2] << 8 | props[3] << 16 | props[4] * 16777216;
+    const size = Math.min(Math.max(dictSize, 1 << 21), 1 << 30);   // ring >= dictionary, and >= one decode() call
+    const win = new Uint8Array(size);
+    let src = new Uint8Array(0), sp = 0, range = 0, code = 0, wp = 0, total = 0, dictStart = 0;   // dictStart: output position of the last dictionary reset (LZMA2)
+    let lc = 0, lp = 0, pb = 0, state = 0, rep0 = 0, rep1 = 0, rep2 = 0, rep3 = 0, P = null, remLen = 0, ended = false;
+    // LZMA2 chunk state: 0 = read control, 1 = in LZMA chunk, 2 = in stored chunk
+    let cst = 0, chunkLeft = 0, chunkPackEnd = 0, needProps = true;
+    const getByte = i => win[(wp - i - 1 + size) % size];
+    const putByte = b => { win[wp] = b; if (++wp === size) wp = 0; total++; };
+    const norm = () => { if (range < 16777216) { range = (range * 256) >>> 0; code = ((code * 256) + src[sp++]) >>> 0; } };
+    const bit = (a, i) => {
+      const p = a[i], bound = (range >>> 11) * p;
+      let b; if (code < bound) { range = bound; a[i] = p + ((2048 - p) >> 5); b = 0; } else { range -= bound; code -= bound; a[i] = p - (p >> 5); b = 1; }
+      norm(); return b;
+    };
+    const direct = n => { let r = 0; while (n--) { range >>>= 1; let b = 0; if (code >= range) { code -= range; b = 1; } r = r * 2 + b; norm(); } return r; };
+    const tree = (a, o, n) => { let m = 1; for (let i = 0; i < n; i++) m = (m << 1) + bit(a, o + m); return m - (1 << n); };
+    const rtree = (a, o, n) => { let m = 1, s = 0; for (let i = 0; i < n; i++) { const b = bit(a, o + m); m = (m << 1) + b; s |= b << i; } return s; };
+    const lenP = () => ({ c: new Uint16Array(2).fill(1024), low: new Uint16Array(128).fill(1024), mid: new Uint16Array(128).fill(1024), high: new Uint16Array(256).fill(1024) });
+    const len = (L, ps) => !bit(L.c, 0) ? tree(L.low, ps * 8, 3) : !bit(L.c, 1) ? 8 + tree(L.mid, ps * 8, 3) : 16 + tree(L.high, 0, 8);
+    const f = () => new Uint16Array(192).fill(1024);
+    const setProps = d => { lc = d % 9; d = Math.floor(d / 9); lp = d % 5; pb = Math.floor(d / 5); };
+    const reset = () => {
+      state = 0; rep0 = rep1 = rep2 = rep3 = 0; remLen = 0;
+      P = { lit: new Uint16Array(0x300 << (lc + lp)).fill(1024), m: f(), r: f(), g0: f(), g1: f(), g2: f(), l0: f(),
+        slot: new Uint16Array(256).fill(1024), pos: new Uint16Array(115).fill(1024), align: new Uint16Array(16).fill(1024), len: lenP(), rlen: lenP() };
+    };
+    const initRange = () => { sp++; code = 0; for (let i = 0; i < 4; i++) code = ((code << 8) | src[sp++]) >>> 0; range = 0xffffffff; };
+    // decode until `limit` total output bytes (or the end marker)
+    function run(limit) {
+      const pbm = (1 << pb) - 1, lpm = (1 << lp) - 1;
+      while (remLen > 0 && total < limit) { putByte(getByte(rep0)); remLen--; }
+      while (total < limit) {
+        const ps = total & pbm;
+        if (!bit(P.m, (state << 4) + ps)) {
+          const prev = total > dictStart ? getByte(0) : 0, base = 0x300 * (((total & lpm) << lc) + (prev >> (8 - lc)));
+          let s = 1;
+          if (state >= 7) {
+            let mb = getByte(rep0);
+            do { const m = (mb >> 7) & 1; mb <<= 1; const b = bit(P.lit, base + ((1 + m) << 8) + s); s = (s << 1) | b; if (m !== b) break; } while (s < 0x100);
+          }
+          while (s < 0x100) s = (s << 1) | bit(P.lit, base + s);
+          putByte(s & 0xff); state = state < 4 ? 0 : state < 10 ? state - 3 : state - 6;
+          continue;
+        }
+        let n;
+        if (bit(P.r, state)) {
+          if (total === dictStart) throw new Error("bad LZMA data");
+          if (!bit(P.g0, state)) {
+            if (!bit(P.l0, (state << 4) + ps)) { state = state < 7 ? 9 : 11; putByte(getByte(rep0)); continue; }
+          } else {
+            let d;
+            if (!bit(P.g1, state)) d = rep1; else { if (!bit(P.g2, state)) d = rep2; else { d = rep3; rep3 = rep2; } rep2 = rep1; }
+            rep1 = rep0; rep0 = d;
+          }
+          n = len(P.rlen, ps); state = state < 7 ? 8 : 11;
+        } else {
+          rep3 = rep2; rep2 = rep1; rep1 = rep0; n = len(P.len, ps); state = state < 7 ? 7 : 10;
+          const slot = tree(P.slot, Math.min(n, 3) * 64, 6);
+          if (slot < 4) rep0 = slot;
+          else {
+            const nd = (slot >> 1) - 1; let d = (2 | (slot & 1)) * 2 ** nd;
+            if (slot < 14) d += rtree(P.pos, d - slot, nd); else d += direct(nd - 4) * 16 + rtree(P.align, 0, 4);
+            rep0 = d;
+          }
+          if (rep0 === 0xffffffff) { ended = true; return; }
+          if (rep0 >= total - dictStart || rep0 >= size) throw new Error("bad LZMA data");
+        }
+        remLen = n + 2;
+        while (remLen > 0 && total < limit) { putByte(getByte(rep0)); remLen--; }
+      }
+    }
+    if (!isLzma2) { setProps(props[0]); reset(); }
+    let started = false;
+    return {
+      get ended() { return ended; },
+      get inputLeft() { return src.length - sp; },
+      feed(u8) { const n = new Uint8Array(src.length - sp + u8.length); n.set(src.subarray(sp)); n.set(u8, src.length - sp); chunkPackEnd -= sp; src = n; sp = 0; },
+      decode(max) {
+        const start = total, target = total + Math.min(max, size);
+        if (!isLzma2) {
+          if (!started) { initRange(); started = true; }
+          run(unpackSize ? Math.min(target, unpackSize) : target);
+          if (unpackSize && total >= unpackSize) ended = true;
+        } else {
+          while (total < target && !ended) {
+            if (cst === 0) {
+              const c = src[sp++];
+              if (c === 0) { ended = true; break; }
+              if (c < 0x80) {
+                if (c === 1) dictStart = total;      // stored chunk with a dictionary reset
+                chunkLeft = ((src[sp] << 8) | src[sp + 1]) + 1; sp += 2; cst = 2;
+              } else {
+                chunkLeft = ((c & 0x1f) << 16) + ((src[sp] << 8) | src[sp + 1]) + 1;
+                const pk = ((src[sp + 2] << 8) | src[sp + 3]) + 1; sp += 4;
+                const mode = (c >> 5) & 3;
+                if (mode === 3) dictStart = total;   // dictionary reset (each block of a multi-threaded archive)
+                if (mode >= 2) setProps(src[sp++]);
+                if (mode >= 1) reset();
+                chunkPackEnd = sp + pk; initRange(); cst = 1;
+              }
+            }
+            if (cst === 2) {
+              const k = Math.min(chunkLeft, target - total);
+              for (let i = 0; i < k; i++) putByte(src[sp++]);
+              chunkLeft -= k; if (!chunkLeft) cst = 0;
+            } else if (cst === 1) {
+              const lim = Math.min(total + chunkLeft, target), before = total;
+              run(lim);
+              chunkLeft -= total - before;
+              if (!chunkLeft) { sp = chunkPackEnd; cst = 0; }
+            }
+          }
+        }
+        const n = total - start, out = new Uint8Array(n);
+        for (let i = 0; i < n; i++) out[i] = win[(wp - n + i + size) % size];
+        return out;
+      }
+    };
+  }
+
+  async function list7z(file) {
+    const sh = new DataView((await readAt(file, 0, 32)).buffer);
+    if (sh.getUint32(0) !== 0x377abcaf || sh.getUint16(4) !== 0x271c) throw new Error("This isn't a readable 7z.");
+    const nhOff = 32 + u64(sh, 12), nhSize = u64(sh, 20);
+    if (nhOff + nhSize > file.size) throw new Error("This 7z is cut short.");
+    let b = await readAt(file, nhOff, nhSize), p = 0;
+    const byte = () => b[p++];
+    const num = () => {
+      const first = b[p++]; let mask = 0x80, v = 0;
+      for (let i = 0; i < 8; i++) { if (!(first & mask)) return v + (first & (mask - 1)) * 2 ** (8 * i); v += b[p++] * 2 ** (8 * i); mask >>= 1; }
+      return v;
+    };
+    const bits = (n, allCheck) => {
+      if (allCheck && byte()) return new Array(n).fill(true);
+      const r = []; let cur = 0;
+      for (let i = 0; i < n; i++) { if (!(i & 7)) cur = byte(); r.push(!!(cur & (0x80 >> (i & 7)))); }
+      return r;
+    };
+    const digests = n => { const d = bits(n, true); p += 4 * d.filter(Boolean).length; return d; };
+    function streams() {
+      const S = { packPos: 0, packSizes: [], folders: [], subSizes: null };
+      for (let id = byte(); id; id = byte()) {
+        if (id === 6) {
+          S.packPos = num(); const n = num();
+          for (let t = byte(); t; t = byte()) { if (t === 9) for (let i = 0; i < n; i++) S.packSizes.push(num()); else if (t === 10) digests(n); else p += num(); }
+        } else if (id === 7) {
+          if (byte() !== 11) throw new Error("This 7z's header can't be read.");
+          const nf = num(); if (byte()) throw new Error("This 7z's header can't be read.");
+          for (let k = 0; k < nf; k++) {
+            const coders = []; let tin = 0, tout = 0;
+            for (let c = num(); c--;) {
+              const fl = byte(), id = b.slice(p, p + (fl & 15)); p += fl & 15;
+              let ni = 1, no = 1; if (fl & 0x10) { ni = num(); no = num(); }
+              let pr = null; if (fl & 0x20) { const s = num(); pr = b.slice(p, p + s); p += s; }
+              coders.push({ id: [...id].map(x => x.toString(16).padStart(2, "0")).join(""), pr }); tin += ni; tout += no;
+            }
+            for (let i = 0; i < tout - 1; i++) { num(); num(); }
+            const np = tin - (tout - 1); if (np > 1) for (let i = 0; i < np; i++) num();
+            S.folders.push({ coders, tout, sizes: [], nsub: 1, crc: false });
+          }
+          for (let t = byte(); t; t = byte()) {
+            if (t === 12) S.folders.forEach(fo => { for (let i = 0; i < fo.tout; i++) fo.sizes.push(num()); });
+            else if (t === 10) digests(nf).forEach((d, i) => S.folders[i].crc = d); else p += num();
+          }
+        } else if (id === 8) {
+          let t = byte();
+          if (t === 13) { S.folders.forEach(fo => fo.nsub = num()); t = byte(); }
+          S.subSizes = [];
+          S.folders.forEach(fo => {
+            if (!fo.nsub) return;
+            const tot = fo.sizes[fo.sizes.length - 1]; let sum = 0;
+            for (let i = 1; i < fo.nsub; i++) { const s = t === 9 ? num() : 0; S.subSizes.push(s); sum += s; }
+            S.subSizes.push(tot - sum);
+          });
+          if (t === 9) t = byte();
+          while (t) { if (t === 10) digests(S.folders.reduce((a, fo) => a + (fo.nsub === 1 && fo.crc ? 0 : fo.nsub), 0)); else p += num(); t = byte(); }
+        } else throw new Error("This 7z's header can't be read.");
+      }
+      if (!S.subSizes) S.subSizes = S.folders.map(fo => fo.sizes[fo.sizes.length - 1]);
+      return S;
+    }
+    const coderOf = fo => {
+      if (fo.coders.some(x => x.id === "06f10701")) throw new Error("This 7z is encrypted. Re-pack it without a password.");
+      const c = fo.coders.filter(x => x.id !== "00");
+      if (c.length !== 1 || (c[0].id !== "030101" && c[0].id !== "21")) throw new Error("This 7z uses a compression this page can't read. Re-pack it with LZMA or LZMA2.");
+      return c[0];
+    };
+    let id = byte();
+    if (id === 0x17) {
+      const S = streams(), fo = S.folders[0], size = fo.sizes[fo.sizes.length - 1];
+      const packed = await readAt(file, 32 + S.packPos, S.packSizes[0]);
+      const c = coderOf(fo), d = lzmaStream(c.id === "21", c.pr, size);
+      d.feed(packed); b = d.decode(size);
+      p = 0; id = byte();
+    }
+    if (id !== 1) throw new Error("This 7z's header can't be read.");
+    let S = { subSizes: [], folders: [], packSizes: [], packPos: 0 }, out = [];
+    for (let t = byte(); t; t = byte()) {
+      if (t === 2) { for (let q = byte(); q; q = byte()) p += num(); }
+      else if (t === 3) streams();
+      else if (t === 4) S = streams();
+      else if (t === 5) {
+        const n = num(); let empty = new Array(n).fill(false), emptyFile = null, names = [];
+        for (let q = byte(); q; q = byte()) {
+          const size = num(), end = p + size;
+          if (q === 14) empty = bits(n, false);
+          else if (q === 15) emptyFile = bits(empty.filter(Boolean).length, false);
+          else if (q === 17) {
+            if (byte()) throw new Error("This 7z's header can't be read.");
+            let s = "";
+            while (p < end) { const ch = b[p] | (b[p + 1] << 8); p += 2; if (ch) s += String.fromCharCode(ch); else { names.push(s); s = ""; } }
+          }
+          p = end;
+        }
+        // where each non-empty file sits: folder, offset in the folder's output
+        let si = 0, ei = 0, fi = 0, left = 0, off = 0, packPos = 32 + S.packPos;
+        const packStart = []; S.folders.forEach((fo, i) => { packStart.push(packPos); packPos += S.packSizes[i] || 0; });
+        for (let i = 0; i < n; i++) {
+          const name = (names[i] || "").replace(/\\/g, "/");
+          if (empty[i]) { const isFile = emptyFile && emptyFile[ei]; ei++; out.push({ name, size: 0, dir: !isFile }); continue; }
+          while (!left) { left = S.folders[fi].nsub; off = 0; fi++; }
+          const fo = S.folders[fi - 1], size = S.subSizes[si++] || 0;
+          out.push({ name, size, dir: false, sz7: { coder: fo.coders, packPos: packStart[fi - 1], folderSize: fo.sizes[fo.sizes.length - 1], off } });
+          off += size; left--;
+        }
+        out.coderOf = coderOf;
+      } else p += num();
+    }
+    out.coderOf = coderOf;
+    return out;
+  }
+
+  async function listArchive(file) {
+    const sig = await readAt(file, 0, 6);
+    if (sig[0] === 0x37 && sig[1] === 0x7a && sig[2] === 0xbc && sig[3] === 0xaf) return list7z(file);
+    if (sig[0] === 0x50 && sig[1] === 0x4b) return listZip(file);
+    throw new Error("This isn't a .zip or .7z file.");
+  }
+
+  function findGod(entries) {
+    const files = entries.filter(e => !e.dir).map(e => ({ ...e, name: e.name.replace(/\\/g, "/") }));
+    const pkg = files.find(e => e.name.split("/").pop().toUpperCase() === GOD_ID);
+    const re = new RegExp("(^|/)" + GOD_ID + "\\.data/Data(\\d{4})$", "i");
+    const data = files.filter(e => re.test(e.name)).sort((a, b) => +a.name.match(re)[2] - +b.name.match(re)[2]);
+    const missing = [];
+    if (!pkg) missing.push(GOD_ID);
+    if (!data.length) missing.push(GOD_ID + ".data/DataNNNN");
+    return { pkg, data, missing };
+  }
+
+  // forward-only readers over one archive member (reopened when a read goes backwards)
+  function zipStream(file, e) {
+    let reader = null, buf = new Uint8Array(0), pos = 0;
+    const open = async () => {
+      const lh = new DataView((await readAt(file, e.zip.lho, 30)).buffer);
+      const start = e.zip.lho + 30 + lh.getUint16(26, true) + lh.getUint16(28, true);
+      let s = file.slice(start, start + e.zip.csize).stream();
+      if (e.zip.method === 8) s = s.pipeThrough(new DecompressionStream("deflate-raw"));
+      else if (e.zip.method !== 0) throw new Error("The GOD zip uses a compression method this page can't read.");
+      reader = s.getReader(); buf = new Uint8Array(0); pos = 0;
+    };
+    return { async readAt(off, n) {
+      if (!reader || off < pos) await open();
+      const out = new Uint8Array(n); let got = 0;
+      while (got < n) {
+        if (!buf.length) { const r = await reader.read(); if (r.done) throw new Error("A GOD data file is shorter than expected."); buf = r.value; }
+        if (pos < off) { const k = Math.min(off - pos, buf.length); buf = buf.subarray(k); pos += k; continue; }
+        const k = Math.min(n - got, buf.length); out.set(buf.subarray(0, k), got); buf = buf.subarray(k); got += k; pos += k;
+      }
+      return out;
+    } };
+  }
+  function sevenStream(file, e, coderOf) {
+    let dec = null, inPos = 0, pos = 0, pending = new Uint8Array(0);
+    const fo = { coders: e.sz7.coder }, c = coderOf(fo);
+    const open = () => { dec = lzmaStream(c.id === "21", c.pr, e.sz7.folderSize); inPos = e.sz7.packPos; pos = -e.sz7.off; pending = new Uint8Array(0); };
+    const more = async () => {
+      if (dec.inputLeft < (3 << 20) && inPos < file.size) { const k = Math.min(4 << 20, file.size - inPos); dec.feed(await readAt(file, inPos, k)); inPos += k; }
+      const out = dec.decode(1 << 20);
+      if (!out.length && dec.ended) throw new Error("A GOD data file is shorter than expected.");
+      return out;
+    };
+    return { async readAt(off, n) {
+      if (!dec || off < pos) open();
+      const out = new Uint8Array(n); let got = 0;
+      while (got < n) {
+        if (!pending.length) pending = await more();
+        if (pos < off) { const k = Math.min(off - pos, pending.length); pending = pending.subarray(k); pos += k; continue; }
+        const k = Math.min(n - got, pending.length); out.set(pending.subarray(0, k), got); pending = pending.subarray(k); got += k; pos += k;
+      }
+      return out;
+    } };
+  }
+
+  async function godDisc(file, listing, g) {
+    const streams = g.data.map(e => e.zip ? zipStream(file, e) : sevenStream(file, e, listing.coderOf));
+    async function read(off, size) {
+      const out = new Uint8Array(size); let o = 0;
+      while (size > 0) {
+        const block = Math.floor(off / GOD_BLK), inner = off % GOD_BLK, f = Math.floor(block / GOD_PER_FILE), b = block % GOD_PER_FILE;
+        const group = Math.floor(b / 204), k = b % 204, n = Math.min(size, GOD_BLK - inner);
+        if (f >= streams.length) throw new Error("The GOD package is missing data files.");
+        out.set(await streams[f].readAt((1 + group * 205 + 1 + k) * GOD_BLK + inner, n), o);
+        off += n; size -= n; o += n;
+      }
+      return out;
+    }
+    if (new TextDecoder().decode(await read(0x10000, 20)) !== "MICROSOFT*XBOX*MEDIA") throw new Error("That GOD package doesn't hold an Xbox disc image.");
+    const vd = new DataView((await read(0x10014, 8)).buffer), root = await read(vd.getUint32(0, true) * 0x800, vd.getUint32(4, true));
+    const rd = new DataView(root.buffer);
+    async function find(name) {
+      const stack = [0];
+      while (stack.length) {
+        const o = stack.pop();
+        if (o * 4 + 14 > root.length) continue;
+        const l = rd.getUint16(o * 4, true), r = rd.getUint16(o * 4 + 2, true);
+        if (l === 0xffff) continue;
+        const sec = rd.getUint32(o * 4 + 4, true), sz = rd.getUint32(o * 4 + 8, true), attr = root[o * 4 + 12], nl = root[o * 4 + 13];
+        const nm = String.fromCharCode(...root.subarray(o * 4 + 14, o * 4 + 14 + nl));
+        if (nm.toLowerCase() === name.toLowerCase() && !(attr & 0x10)) return [sec, sz];
+        if (l) stack.push(l); if (r) stack.push(r);
+      }
+      throw new Error(name + " wasn't found in the GOD package. Is it Muchi Muchi Pork!?");
+    }
+    return { read, find };
+  }
+
+  function decodeChunk(c) {
+    const dv = new DataView(c.buffer, c.byteOffset, c.byteLength);
+    const outBytes = dv.getUint32(0), tokens = dv.getUint32(4), ndict = dv.getUint16(8), bitsN = dv.getUint16(10), ecmd = dv.getUint32(12);
+    const dic = []; for (let i = 0; i < ndict; i++) dic.push(dv.getUint16(16 + 2 * i));
+    let cmd = 16 + 2 * ndict; const flg = cmd + ecmd; let lit = flg + Math.ceil(tokens / 8);
+    const idx = [];
+    for (let t = 0; t < tokens; t++) {
+      if ((c[flg + (t >> 3)] >> (7 - (t & 7))) & 1) {
+        const v = (c[cmd] << 8) | c[cmd + 1]; cmd += 2;
+        const d = v >> 5; for (let k = (v & 31) + 3; k--;) idx.push(idx[idx.length - d]);
+      } else idx.push(c[lit++]);
+    }
+    const n = outBytes / 2, px = [];
+    if (bitsN === 0) { for (let i = 0; i < n; i++) px.push(idx[2 * i] << 8 | idx[2 * i + 1]); return px; }
+    let acc = 0, nb = 0; const mask = (1 << bitsN) - 1;
+    for (const b of idx) {
+      acc = ((acc << 8) | b) >>> 0; nb += 8;
+      while (nb >= bitsN && px.length < n) { nb -= bitsN; px.push(dic[(acc >>> nb) & mask]); }
+    }
+    return px;
+  }
+
+  function shrink(cell, cw, ch, w, h) {
+    const out = [];
+    for (let y = 0; y < h; y++) {
+      const y0 = Math.floor(y * ch / h), y1 = Math.floor(((y + 1) * ch + h - 1) / h);
+      for (let x = 0; x < w; x++) {
+        const x0 = Math.floor(x * cw / w), x1 = Math.floor(((x + 1) * cw + w - 1) / w);
+        let r = 0, g = 0, b = 0, cnt = 0;
+        for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) {
+          const v = cell[yy * cw + xx];
+          if (v & 0x8000) { r += (v >> 10) & 31; g += (v >> 5) & 31; b += v & 31; cnt++; }
+        }
+        const tot = (y1 - y0) * (x1 - x0);
+        out.push(cnt && cnt * 2 >= tot ? 0x8000 | (Math.floor(r / cnt) << 10) | (Math.floor(g / cnt) << 5) | Math.floor(b / cnt) : 0);
+      }
+    }
+    return out;
+  }
+
+  // the digits as they go into the u4 file (16-bit words, byte-swapped like the rest of the file)
+  async function buildGlyphs(file, listing, g, progress) {
+    const disc = await godDisc(file, listing, g);
+    progress("reading MPD100.bin…");
+    const [sec, size] = await disc.find("MPD100.bin"), base = sec * 0x800;
+    const hdr = new DataView((await disc.read(base, 0x24 + 0x114)).buffer);
+    if (hdr.getUint32(0) !== 0xc0090117 || hdr.getUint32(0x24) !== 0) throw new Error("MPD100.bin is in an unexpected format.");
+    const rom = base + hdr.getUint32(0x30);
+    const count = new DataView((await disc.read(rom, 4)).buffer).getUint32(0);
+    if (GLYPH_SHEET >= count) throw new Error("MPD100.bin has too few graphics.");
+    const rec = new DataView((await disc.read(rom + 4 + GLYPH_SHEET * 16, 16)).buffer);
+    progress("reading the counter digits…");
+    const px = decodeChunk(await disc.read(rom + 4 + count * 16 + rec.getUint32(4), rec.getUint32(8)));
+    const sw = px[6] + 1, sh = px[7] + 1;
+    if (sw !== 240 || sh !== 256) throw new Error("Graphic " + GLYPH_SHEET + " of MPD100.bin isn't the counter digits.");
+    const cells = GLYPH_CELLS.map(([cx, cy]) => {
+      const cell = [];
+      for (let yy = cy; yy < cy + GLYPH_CH; yy++) for (let xx = cx; xx < cx + GLYPH_CW; xx++) { const v = px[8 + yy * sw + xx]; cell.push(v === 0x83e0 ? 0 : v); }
+      return cell;
+    });
+    // each digit stored 24 px wide (upload widths must be a multiple of 8), the columns past w transparent
+    const words = [], small = [];
+    for (const [w, h] of GLYPH_SIZES) for (let d = 0; d < 10; d++) {
+      const px = shrink(cells[d], GLYPH_CW, GLYPH_CH, w, h);
+      if (small.length < 10) small.push(px);
+      for (let y = 0; y < h; y++) { for (let x = 0; x < 24; x++) words.push(x < w ? px[y * w + x] : 0); }
+    }
+    for (let d = 0; d < 10; d++) words.push(...glowOf(small[d], GLYPH_SIZES[0][0], GLYPH_SIZES[0][1]));
+    const out = new Uint8Array(words.length * 2);
+    words.forEach((v, i) => { out[2 * i] = v & 0xff; out[2 * i + 1] = v >> 8; });
+    return out;
+  }
+
+  async function loadGod(file) {
+    const msg = $("loadedGod");
+    state.glyphs = null; tryPatch();
+    const say = t => msg.textContent = file.name + " (" + fmtSize(file.size) + "): " + t;
+    say("looking for the GOD package…");
+    try {
+      const listing = await listArchive(file), g = findGod(listing);
+      if (g.missing.length) throw new Error("not found: " + g.missing.join(" and ") + ". Is this the Muchi Muchi Pork! Xbox 360 GOD package?");
+      if (g.data.some(e => e.zip) && typeof DecompressionStream === "undefined") throw new Error("This browser can't unzip files. Use a current Chrome, Edge, Firefox or Safari.");
+      say("found " + GOD_ID + " and " + g.data.length + " data file" + (g.data.length > 1 ? "s" : "") + "; reading the disc image…");
+      state.glyphs = await buildGlyphs(file, listing, g, say);
+      say("FEVER counter digits read.");
+    } catch (err) {
+      state.glyphs = null;
+      say(err.message);
+    }
+    tryPatch();
+  }
+  const dropGod = $("dropGod"), inputGod = $("fileGod");
+  inputGod.onchange = () => inputGod.files.length && loadGod(inputGod.files[0]);
+  ["dragenter", "dragover"].forEach(ev => dropGod.addEventListener(ev, e => { e.preventDefault(); dropGod.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => dropGod.addEventListener(ev, e => { e.preventDefault(); dropGod.classList.remove("over"); }));
+  dropGod.addEventListener("drop", e => { if (e.dataTransfer.files.length) loadGod(e.dataTransfer.files[0]); });
 
   const drop = $("drop"), input = $("file");
   input.onchange = () => input.files.length && load([...input.files]);
